@@ -2,6 +2,7 @@ lib/File/AtomicWrite.pm
 LICENSE
 Makefile.PL
 MANIFEST
+META.yml
 README
 t/001-init.t
 inc/Module/Install/Base.pm
