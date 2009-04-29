@@ -20,7 +20,7 @@ use File::Basename qw(dirname);
 use File::Path qw(mkpath);
 use File::Temp qw(tempfile);
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 # Default options, override via hashref passed to write_file().
 my %default_params = ( template => ".tmp.XXXXXXXX", MKPATH => 0 );
@@ -50,26 +50,49 @@ sub write_file {
     croak("invalid type for input option: $input_ref\n");
   }
 
+  my $digest;
+  if ( exists $params_ref->{CHECKSUM} and $params_ref->{CHECKSUM} ) {
+    eval { require Digest::SHA1; };
+    if ($@) {
+      croak("cannot checksum as lack Digest::SHA1\n");
+    }
+    $digest = Digest::SHA1->new;
+  } else {
+    # so can rely on only exists subsequently for "truth"
+    delete $params_ref->{CHECKSUM};
+  }
+
   $params_ref->{_dir} = dirname( $params_ref->{file} );
-
-  # TODO support tmpdir option, so the temporary directory can be
-  # different from the actual file directory. (With suitable warnings
-  # about partition boundaries and so forth. Required for certain
-  # directories where some other program might accidentally read even
-  # the transitory tempfile this module creates, such as /etc/cron.d or
-  # /etc/logrotate.d on certain platforms.)
-
   if ( !-d $params_ref->{_dir} ) {
     _mkpath( $params_ref->{MKPATH}, $params_ref->{_dir} );
   }
 
+  if ( exists $params_ref->{tmpdir} ) {
+    if ( !-d $params_ref->{tmpdir}
+      and $params_ref->{tmpdir} ne $params_ref->{_dir} ) {
+      _mkpath( $params_ref->{MKPATH}, $params_ref->{tmpdir} );
+
+      # partition sanity check
+      my @dev_ids = map { ( stat $params_ref->{$_} )[0] } qw{_dir tmpdir};
+      if ( $dev_ids[0] != $dev_ids[1] ) {
+        croak("tmpdir and file directory on different partitions\n");
+      }
+    }
+  } else {
+    $params_ref->{tmpdir} = $params_ref->{_dir};
+  }
+
   my ( $tmp_fh, $tmp_filename ) = tempfile(
     $params_ref->{template},
-    DIR    => $params_ref->{_dir},
+    DIR    => $params_ref->{tmpdir},
     UNLINK => 0
   );
   if ( !defined $tmp_fh ) {
     die "unable to obtain temporary filehandle\n";
+  }
+
+  if ( exists $params_ref->{BINMODE} and $params_ref->{BINMODE} ) {
+    binmode($tmp_fh);
   }
 
   my $input = $params_ref->{input};
@@ -83,6 +106,13 @@ sub write_file {
 
       croak("error printing to temporary file: $save_errstr\n");
     }
+
+    if ( exists $params_ref->{CHECKSUM} and !exists $params_ref->{checksum} )
+    {
+      $digest->add($$input);
+      $params_ref->{checksum} = $digest->hexdigest;
+    }
+
   } elsif ( $input_ref eq 'GLOB' ) {
     while ( my $line = <$input> ) {
       unless ( print $tmp_fh $line ) {
@@ -94,29 +124,33 @@ sub write_file {
 
         croak("error printing to temporary file: $save_errstr\n");
       }
+
+      if ( exists $params_ref->{CHECKSUM}
+        and !exists $params_ref->{checksum} ) {
+        $digest->add($$input);
+      }
+    }
+    if ( exists $params_ref->{CHECKSUM} and !exists $params_ref->{checksum} )
+    {
+      $params_ref->{checksum} = $digest->hexdigest;
     }
   }
 
-  if ( exists $params_ref->{min_size} ) {
-    my $written = tell($tmp_fh);
-    if ( $written == -1 ) {
-      # recommended by perlport(1) prior to unlink/rename calls
-      close $tmp_fh;
-      unlink $tmp_filename;
-
-      die("unable to tell() on temporary filehandle\n");
-
-    } elsif ( $written < $params_ref->{min_size} ) {
-      # recommended by perlport(1) prior to unlink/rename calls
-      close $tmp_fh;
-      unlink $tmp_filename;
-
-      croak("bytes written failed to exceed min_size required\n");
+  eval {
+    if ( exists $params_ref->{min_size} ) {
+      _check_min_size( $tmp_fh, $params_ref->{min_size} );
     }
-  }
+    if ( exists $params_ref->{CHECKSUM} ) {
+      _check_checksum( $tmp_fh, $params_ref->{checksum} );
+    }
+  };
+  if ($@) {
+    # recommended by perlport(1) prior to unlink/rename calls
+    close $tmp_fh;
+    unlink $tmp_filename;
 
-  # TODO checksum option on the written data as a very paranoid check?
-  # This would require the optional use of a Digest::* module.
+    die $@;
+  }
 
   # recommended by perlport(1) prior to unlink/rename calls
   close($tmp_fh);
@@ -155,6 +189,39 @@ sub _mkpath {
     }
   } else {
     croak("parent directory does not exist\n");
+  }
+
+  return 1;
+}
+
+sub _check_checksum {
+  my $tmp_fh   = shift;
+  my $checksum = shift;
+
+  seek( $tmp_fh, 0, 0 )
+    or croak("could not seek() on temporary filehandle\n");
+
+  my $digest = Digest::SHA1->new;
+  $digest->addfile($tmp_fh);
+
+  my $on_disk_checksum = $digest->hexdigest;
+
+  if ( $on_disk_checksum ne $checksum ) {
+    croak("temporary file SHA1 hexdigest does not match supplied checksum\n");
+  }
+
+  return 1;
+}
+
+sub _check_min_size {
+  my $tmp_fh   = shift;
+  my $min_size = shift;
+  my $written  = tell($tmp_fh);
+
+  if ( $written == -1 ) {
+    die("unable to tell() on temporary filehandle\n");
+  } elsif ( $written < $min_size ) {
+    croak("bytes written failed to exceed min_size required\n");
   }
 
   return 1;
@@ -231,15 +298,18 @@ File::AtomicWrite - writes files atomically via rename()
   eval {
 
     File::AtomicWrite->write_file(
-      file  => 'data.dat',
-      input => $filehandle
+      { file  => 'data.dat',
+        input => $filehandle
+      }
     );
 
     # how paranoid are you?
     File::AtomicWrite->write_file(
-      file     => '/etc/passwd',
-      input    => $$scalarref,
-      min_size => 100
+      { file     => '/etc/passwd',
+        input    => $$scalarref,
+        CHECKSUM => 1,
+        min_size => 100
+      }
     );
 
   };
@@ -267,8 +337,10 @@ L<File::Path>) may not.
 =item C<write_file>
 
 Class method. Performs the various required steps in a single method
-call. Requires that the complete file data be passed via the
-C<input> option.
+call. Requires that the complete file data be passed via the C<input>
+option. Only if all checks pass will the B<input> data be moved to the
+B<file> file via C<rename()>. If not, the module will throw an error,
+and attempt to cleanup any temporary files created.
 
 See L<"OPTIONS"> for details on the various required and optional
 options that can be passed as a hash reference to C<write_file>.
@@ -284,8 +356,13 @@ hash reference:
 
 item B<file>
 
-Mandatory. Filename in the current working directory, or a path to the
-file that will be eventually created.
+Mandatory. A filename in the current working directory, or a path to the
+file that will be eventually created. By default, the temporary file
+will be written into the parent directory of the B<file> path. This
+default can be changed by using the B<tmpdir> option.
+
+If the B<MKPATH> option is true, the module will attempt to create any
+missing directories, instead of issuing an error.
 
 =item B<input>
 
@@ -302,8 +379,8 @@ as otherwise L<File::Temp|File::Temp> will throw an error.
 
 =item B<min_size>
 
-Specify a minimum size (in bytes) that the data written to the file must
-exceede. If not, the module throws an error.
+Specify a minimum size (in bytes) that the data written must exceede. If
+not, the module throws an error.
 
 =item B<mode>
 
@@ -312,15 +389,55 @@ throwing of error. NOTE: depending on the source of the mode, C<oct()>
 may be first required to convert it into an octal number:
 
   my $orig_mode = (stat $source_file)[2] & 07777;
-  File::AtomicWrite->write_file( { ..., mode => $orig_mode });
+  ...->write_file({ ..., mode => $orig_mode });
 
   my $mode = '0644';
-  File::AtomicWrite->write_file( { ..., mode => oct($mode) });
+  ...->write_file({ ..., mode => oct($mode) });
+
+The module does not change C<umask()>, nor is there a means to specify
+the permissions on directories created if B<MKPATH> is set.
 
 =item B<owner>
 
 Accepts similar arguments to chown(1) to be applied via C<chown>
 to the file. Usual throwing of error.
+
+  ...->write_file({ ..., owner => '0'   });
+  ...->write_file({ ..., owner => '0:0' });
+  ...->write_file({ ..., owner => 'user:somegroup' });
+
+=item B<tmpdir>
+
+If set to a directory, the temporary file will be written to this
+directory instead of by default to the parent directory of the target
+B<file>. If the B<tmpdir> is on a different partition than the parent
+directory for B<file>, or if anything else goes awry, the module will
+throw an error.
+
+This option is advisable when writing files to include directories such
+as C</etc/logrotate.d>, as the programs that read include files from
+these directories may read even a temporary dot file while it is being
+written. To avoid this (slight but non-zero) risk, use the B<tmpdir>
+option to write the configuration out in full under a different
+directory on the same partition.
+
+=item B<checksum>
+
+If this option exists, and B<CHECKSUM> is true, the module will not
+create a L<Digest::SHA1|Digest::SHA1> C<hexdigest> of the data being
+written out to disk, but instead will rely on the value passed by
+the caller.
+
+=item B<CHECKSUM>
+
+If true, L<Digest::SHA1|Digest::SHA1> will be used to checksum the data
+read back from the disk against the checksum derived from the data
+written out to the temporary file. See also the B<checksum> option.
+
+=item B<BINMODE>
+
+If true, C<binmode()> is set on the temporary filehandle prior to
+writing the B<input> data to it.
 
 =item B<MKPATH>
 
@@ -328,6 +445,9 @@ If true (default is false), attempt to create the parent directory of
 B<file> should that directory not exist. If false, and the parent
 directory does not exist, the module throws an error. If the directory
 cannot be created, the module throws an error.
+
+If true, this option will also attempt to create the B<tmpdir>
+directory, if set.
 
 =back
 
