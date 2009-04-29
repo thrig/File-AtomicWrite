@@ -18,11 +18,10 @@ use File::Basename qw(dirname);
 use File::Path qw(mkpath);
 use File::Temp qw(tempfile);
 
-use vars qw{VERSION};
-$VERSION = '0.01';
+our $VERSION = '0.01';
 
 # Default options, override via hashref passed to write_file().
-my %default_params = { template => ".tmp.XXXXXXXX", MKPATH => 0 };
+my %default_params = ( template => ".tmp.XXXXXXXX", MKPATH => 0 );
 
 # Single method that accepts output filename, perhaps optional tmp file
 # template, and a filehandle or scalar ref, and handles all the details
