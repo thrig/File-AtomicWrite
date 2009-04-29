@@ -8,6 +8,8 @@
 # This module is free software; you can redistribute it and/or modify it
 # under the Artistic license.
 
+package File::AtomicWrite;
+
 use strict;
 use warnings;
 
@@ -26,9 +28,13 @@ my %default_params = ( template => ".tmp.XXXXXXXX", MKPATH => 0 );
 # Single method that accepts output filename, perhaps optional tmp file
 # template, and a filehandle or scalar ref, and handles all the details
 # in a single shot.
+#
+# TODO new and then DESTROY type support for folks who want a temporary
+# filehandle back to play with... and test whether any TERM signal
+# localization should be done, and if so, where.
 sub write_file {
   my $class = shift;
-  my $user_params = shift || croak("not enough parameters passed\n");
+  my $user_params = shift || {};
 
   my $params_ref = { %default_params, %$user_params };
 
@@ -37,6 +43,11 @@ sub write_file {
       or !defined $params_ref->{$req_param} ) {
       croak("missing or empty required option: $req_param\n");
     }
+  }
+
+  my $input_ref = ref $params_ref->{input};
+  unless ( $input_ref eq 'SCALAR' or $input_ref eq 'GLOB' ) {
+    croak("invalid type for input option: $input_ref\n");
   }
 
   $params_ref->{_dir} = dirname( $params_ref->{file} );
@@ -62,7 +73,7 @@ sub write_file {
   }
 
   my $input = $params_ref->{input};
-  if ( ref $input eq '' ) {
+  if ( $input_ref eq 'SCALAR' ) {
     unless ( print $tmp_fh $$input ) {
       my $save_errstr = $!;
 
@@ -72,7 +83,7 @@ sub write_file {
 
       croak("error printing to temporary file: $save_errstr\n");
     }
-  } else {
+  } elsif ( $input_ref eq 'GLOB' ) {
     while ( my $line = <$input> ) {
       unless ( print $tmp_fh $line ) {
         my $save_errstr = $!;
@@ -105,6 +116,7 @@ sub write_file {
   }
 
   # TODO checksum option on the written data as a very paranoid check?
+  # This would require the optional use of a Digest::* module.
 
   # recommended by perlport(1) prior to unlink/rename calls
   close($tmp_fh);
@@ -128,6 +140,8 @@ sub write_file {
     unlink $tmp_filename;
     croak "unable to rename file: $save_errstr\n";
   }
+
+  return 1;
 }
 
 sub _mkpath {
