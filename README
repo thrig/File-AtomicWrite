@@ -1,0 +1,8 @@
+Install via the cpan(1) command, or manually via:
+
+perl Makefile.PL
+make
+make test
+make install
+
+Run perldoc(1) on the File::AtomicWrite module for more documentation.

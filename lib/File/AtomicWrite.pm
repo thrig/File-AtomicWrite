@@ -71,7 +71,7 @@ sub write_file {
       close $tmp_fh;
       unlink $tmp_filename;
 
-      croak("error printing to temprorary file: $save_errstr\n");
+      croak("error printing to temporary file: $save_errstr\n");
     }
   } else {
     while ( my $line = <$input> ) {
@@ -238,10 +238,9 @@ File::AtomicWrite - writes files atomically via rename()
 
 This module writes files out atomically by first creating a temporary
 filehandle, then using the rename() function to overwrite the target
-file. The module optionally supports checksumming the output file (to
-confirm that the data written to disk actually matches that in memory)
-and size tests on the output file (to help avoid a zero byte C<passwd>
-file and the resulting headaches).
+file. The module optionally supports size tests on the output file
+(to help avoid a zero byte C<passwd> file and the resulting
+headaches, for example).
 
 Should anything go awry, the module will C<die> or C<croak> as
 appropriate. All error messages created by the module will end with a
