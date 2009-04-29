@@ -306,7 +306,7 @@ File::AtomicWrite - writes files atomically via rename()
     # how paranoid are you?
     File::AtomicWrite->write_file(
       { file     => '/etc/passwd',
-        input    => $$scalarref,
+        input    => \$scalarref,
         CHECKSUM => 1,
         min_size => 100
       }
@@ -461,6 +461,8 @@ Newer versions of this module may be available from CPAN.
   
 If the bug is in the latest version, send a report to the author.
 Patches that fix problems or add new features are welcome.
+
+http://github.com/thrig/File-AtomicWrite/tree/master
 
 =head2 Known Issues
 
