@@ -20,7 +20,7 @@ use File::Basename qw(dirname);
 use File::Path qw(mkpath);
 use File::Temp qw(tempfile);
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 # Default options, override via hashref passed to write_file().
 my %default_params = ( template => ".tmp.XXXXXXXX", MKPATH => 0 );
@@ -167,7 +167,7 @@ sub _set_mode {
 
   croak("invalid mode data\n") if !defined $mode or $mode !~ m/^\d+$/;
 
-  my $count = chmod( oct($mode), $filename );
+  my $count = chmod( $mode, $filename );
   if ( $count != 1 ) {
     die "unable to chmod temporary file\n";
   }
@@ -307,8 +307,15 @@ exceede. If not, the module throws an error.
 
 =item B<mode>
 
-Accepts a Unix mode for C<chmod> to be applied to the file. C<oct()> is
-run on this value. Usual throwing of error.
+Accepts a Unix mode for C<chmod> to be applied to the file. Usual
+throwing of error. NOTE: depending on the source of the mode, C<oct()>
+may be first required to convert it into an octal number:
+
+  my $orig_mode = (stat $source_file)[2] & 07777;
+  File::AtomicWrite->write_file( { ..., mode => $orig_mode });
+
+  my $mode = '0644';
+  File::AtomicWrite->write_file( { ..., mode => oct($mode) });
 
 =item B<owner>
 
