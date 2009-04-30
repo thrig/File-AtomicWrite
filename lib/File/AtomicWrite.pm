@@ -28,10 +28,6 @@ my %default_params = ( template => ".tmp.XXXXXXXX", MKPATH => 0 );
 # Single method that accepts output filename, perhaps optional tmp file
 # template, and a filehandle or scalar ref, and handles all the details
 # in a single shot.
-#
-# TODO new and then DESTROY type support for folks who want a temporary
-# filehandle back to play with... and test whether any TERM signal
-# localization should be done, and if so, where.
 sub write_file {
   my $class = shift;
   my $user_params = shift || {};
@@ -106,11 +102,9 @@ sub write_file {
 
       croak("error printing to temporary file: $save_errstr\n");
     }
-
-    if ( exists $params_ref->{CHECKSUM} and !exists $params_ref->{checksum} )
-    {
+    if ( exists $params_ref->{CHECKSUM}
+      and !exists $params_ref->{checksum} ) {
       $digest->add($$input);
-      $params_ref->{checksum} = $digest->hexdigest;
     }
 
   } elsif ( $input_ref eq 'GLOB' ) {
@@ -130,10 +124,10 @@ sub write_file {
         $digest->add($$input);
       }
     }
-    if ( exists $params_ref->{CHECKSUM} and !exists $params_ref->{checksum} )
-    {
-      $params_ref->{checksum} = $digest->hexdigest;
-    }
+  }
+
+  if ( exists $params_ref->{CHECKSUM} and !exists $params_ref->{checksum} ) {
+    $params_ref->{checksum} = $digest->hexdigest;
   }
 
   eval {
