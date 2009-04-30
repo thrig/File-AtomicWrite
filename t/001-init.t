@@ -200,10 +200,15 @@ SKIP: {
 # BSD or Solaris directory group id semantics are in play, but detecting
 # that would be annoying.
 SKIP: {
-  my $user_name  = getpwuid($<) || undef;
-  my $user_uid   = $<           || '';
-  my $group_name = getgrgid($() || undef;
-  my $group_gid  = $(           || '';
+  my ( $user_name, $user_uid, $group_name, $group_gid );
+
+  # (try to) avoid test problems on bizarre OS
+  eval {
+    $user_name  = getpwuid($<) || undef;
+    $user_uid   = $<           || '';
+    $group_name = getgrgid($() || undef;
+    $group_gid  = $(           || '';
+  };
 
   skip( "no suitable login data to test owner option", 5 )
     unless defined $user_name
