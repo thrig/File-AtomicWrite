@@ -31,7 +31,7 @@ BEGIN { use_ok('File::Temp') }
 my $work_dir = File::Temp::tempdir( CLEANUP => 1 );
 
 SKIP: {
-  skip( "no work directory", 11 ) unless defined $work_dir and -d $work_dir;
+  skip( "no work directory", 9 ) unless defined $work_dir and -d $work_dir;
 
   my $test_file = File::Spec->catfile( $work_dir, 'test1' );
   my $test_data = "test$$";
@@ -67,19 +67,6 @@ SKIP: {
     );
   };
   like( $@, qr/failed to exceed min_size/, 'data does not exceed min_size' );
-
-  # mode - two different modes to help avoid random starting umask
-  # in the test environment...
-  for my $mode (qw(0600 0700)) {
-    my $mode_test_file = File::Spec->catfile( $work_dir, "mode$mode" );
-    my $octo_mode = oct($mode);
-
-    test_write_file(
-      { file => $mode_test_file, input => \"whatever", mode => $octo_mode } );
-    my $file_mode = ( stat $mode_test_file )[2] & 07777;
-
-    ok( $octo_mode == $file_mode, "test mode $mode" );
-  }
 
   # MKPATH - positive test (might fail with "could not create..." if
   # there is a File::Path or related OS problem.
@@ -192,6 +179,23 @@ SKIP: {
     $really_important,
     'Digest::SHA1 external supplied checksum'
   );
+}
+
+SKIP: {
+  skip("no mode tests on bizarre OS", 2) if $^O =~ m/Win32/;
+
+  # mode - two different modes to help avoid random starting umask
+  # in the test environment...
+  for my $mode (qw(0600 0700)) {
+    my $mode_test_file = File::Spec->catfile( $work_dir, "mode$mode" );
+    my $octo_mode = oct($mode);
+
+    test_write_file(
+      { file => $mode_test_file, input => \"whatever", mode => $octo_mode } );
+    my $file_mode = ( stat $mode_test_file )[2] & 07777;
+
+    ok( $octo_mode == $file_mode, "test mode $mode" );
+  }
 }
 
 # owner - confirm that the module code is not buggy, as cannot expect to
