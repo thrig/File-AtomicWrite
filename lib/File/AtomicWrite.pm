@@ -265,9 +265,8 @@ sub _set_ownership {
     $uid = $user_uid;
   }
 
-  if ( !defined $group_name ) {
-    $gid = $user_gid;
-  } else {
+  # Only customize group if have something from caller
+  if ( defined $group_name ) {
     if ( $group_name =~ m/^(\d+)$/ ) {
       $gid = $group_name;
     } else {
@@ -354,7 +353,7 @@ hash reference:
 
 =over 4
 
-item B<file>
+=item B<file>
 
 Mandatory. A filename in the current working directory, or a path to the
 file that will be eventually created. By default, the temporary file

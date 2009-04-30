@@ -5,6 +5,7 @@ MANIFEST
 META.yml
 README
 t/001-init.t
+t/pod.t
 inc/Module/Install/Base.pm
 inc/Module/Install/Can.pm
 inc/Module/Install/Fetch.pm
