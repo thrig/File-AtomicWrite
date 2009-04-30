@@ -470,7 +470,9 @@ C<rename()> call.
 
 =head1 SEE ALSO
 
-L<File::Temp|File::Temp>
+Supporting modules:
+
+L<File::Temp|File::Temp>, L<File::Path|File::Path>, L<File::Basename|File::Basename>, L<Digest::SHA1|Digest::SHA1>
 
 Alternatives, depending on the need, include:
 
