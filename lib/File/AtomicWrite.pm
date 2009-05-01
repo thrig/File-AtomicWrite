@@ -20,47 +20,131 @@ use File::Basename qw(dirname);
 use File::Path qw(mkpath);
 use File::Temp qw(tempfile);
 
-our $VERSION = '0.03';
+our $VERSION = '0.90';
 
-# Default options, override via hashref passed to write_file().
+# Default options
 my %default_params = ( template => ".tmp.XXXXXXXX", MKPATH => 0 );
 
-# Single method that accepts output filename, perhaps optional tmp file
+# Class method that accepts output filename, perhaps optional tmp file
 # template, and a filehandle or scalar ref, and handles all the details
 # in a single shot.
-#
-# TODO new and then DESTROY type support for folks who want a temporary
-# filehandle back to play with... and test whether any TERM signal
-# localization should be done, and if so, where.
 sub write_file {
   my $class = shift;
   my $user_params = shift || {};
 
-  my $params_ref = { %default_params, %$user_params };
-
-  for my $req_param (qw{file input}) {
-    if ( !exists $params_ref->{$req_param}
-      or !defined $params_ref->{$req_param} ) {
-      croak("missing or empty required option: $req_param\n");
-    }
+  if ( !exists $user_params->{input} ) {
+    croak("missing 'input' option");
   }
+
+  my ( $params_ref, $digest, $tmp_fh, $tmp_filename ) = _init($user_params);
+
+  # Attempt cleanup if things go awry
+  local $SIG{TERM} = sub {
+    # recommended by perlport(1) prior to unlink/rename calls
+    close($tmp_fh) if defined $tmp_fh;
+    unlink($tmp_filename) if defined $tmp_filename;
+  };
 
   my $input_ref = ref $params_ref->{input};
   unless ( $input_ref eq 'SCALAR' or $input_ref eq 'GLOB' ) {
     croak("invalid type for input option: $input_ref\n");
   }
 
-  my $digest;
-  if ( exists $params_ref->{CHECKSUM} and $params_ref->{CHECKSUM} ) {
-    eval { require Digest::SHA1; };
-    if ($@) {
-      croak("cannot checksum as lack Digest::SHA1\n");
+  my $input = $params_ref->{input};
+  if ( $input_ref eq 'SCALAR' ) {
+    unless ( print $tmp_fh $$input ) {
+      my $save_errstr = $!;
+
+      # recommended by perlport(1) prior to unlink/rename calls
+      close($tmp_fh) if defined $tmp_fh;
+      unlink($tmp_filename) if defined $tmp_filename;
+
+      croak("error printing to temporary file: $save_errstr\n");
     }
-    $digest = Digest::SHA1->new;
-  } else {
-    # so can rely on only exists subsequently for "truth"
-    delete $params_ref->{CHECKSUM};
+    if ( exists $params_ref->{CHECKSUM}
+      and !exists $params_ref->{checksum} ) {
+      $digest->add($$input);
+    }
+
+  } elsif ( $input_ref eq 'GLOB' ) {
+    while ( my $line = <$input> ) {
+      unless ( print $tmp_fh $line ) {
+        my $save_errstr = $!;
+
+        # recommended by perlport(1) prior to unlink/rename calls
+        close($tmp_fh) if defined $tmp_fh;
+        unlink($tmp_filename) if defined $tmp_filename;
+
+        croak("error printing to temporary file: $save_errstr\n");
+      }
+
+      if ( exists $params_ref->{CHECKSUM}
+        and !exists $params_ref->{checksum} ) {
+        $digest->add($$input);
+      }
+    }
   }
+
+  _resolve( $params_ref, $digest, $tmp_fh, $tmp_filename );
+}
+
+sub new {
+  my $class      = shift;
+  my $self       = {};
+  my $user_param = shift || {};
+
+  croak("option 'input' only for write_file class method")
+    if exists $user_param->{input};
+
+  @{$self}{qw(_params _digest _tmp_fh _tmp_filename)} = _init($user_param);
+
+  bless $self, $class;
+  return $self;
+}
+
+sub fh {
+  return shift->{_tmp_fh};
+}
+
+sub filename {
+  return shift->{_tmp_filename};
+}
+
+sub checksum {
+  my $self = shift;
+  $self->{_params}->{checksum} = shift;
+
+  if ( !$self->{_digest} ) {
+    $self->{_params}->{CHECKSUM} = 1;
+    $self->{_digest} = _init_checksum( $self->{_params} );
+  }
+
+  return $self;
+}
+
+sub commit {
+  my $self = shift;
+  _resolve( @{$self}{qw(_params _digest _tmp_fh _tmp_filename)} );
+}
+
+sub DESTROY {
+  my $self = shift;
+
+  # recommended by perlport(1) prior to unlink/rename calls
+  close $self->{_tmp_fh} if defined $self->{_tmp_fh};
+  unlink $self->{_tmp_filename} if defined $self->{_tmp_filename};
+}
+
+sub _init {
+  my $user_params = shift || {};
+  my $params_ref = { %default_params, %$user_params };
+
+  if ( !exists $params_ref->{file}
+    or !defined $params_ref->{file} ) {
+    croak("missing 'file' option");
+  }
+
+  my $digest = _init_checksum($params_ref);
 
   $params_ref->{_dir} = dirname( $params_ref->{file} );
   if ( !-d $params_ref->{_dir} ) {
@@ -95,45 +179,36 @@ sub write_file {
     binmode($tmp_fh);
   }
 
-  my $input = $params_ref->{input};
-  if ( $input_ref eq 'SCALAR' ) {
-    unless ( print $tmp_fh $$input ) {
-      my $save_errstr = $!;
+  return $params_ref, $digest, $tmp_fh, $tmp_filename;
+}
 
-      # recommended by perlport(1) prior to unlink/rename calls
-      close $tmp_fh;
-      unlink $tmp_filename;
+sub _init_checksum {
+  my $params_ref = shift;
+  my $digest     = 0;
 
-      croak("error printing to temporary file: $save_errstr\n");
+  if ( exists $params_ref->{CHECKSUM} and $params_ref->{CHECKSUM} ) {
+    eval { require Digest::SHA1; };
+    if ($@) {
+      croak("cannot checksum as lack Digest::SHA1\n");
     }
+    $digest = Digest::SHA1->new;
+  } else {
+    # so can rely on 'exists' test elsewhere hereafter
+    delete $params_ref->{CHECKSUM};
+  }
 
-    if ( exists $params_ref->{CHECKSUM} and !exists $params_ref->{checksum} )
-    {
-      $digest->add($$input);
-      $params_ref->{checksum} = $digest->hexdigest;
-    }
+  return $digest;
+}
 
-  } elsif ( $input_ref eq 'GLOB' ) {
-    while ( my $line = <$input> ) {
-      unless ( print $tmp_fh $line ) {
-        my $save_errstr = $!;
+sub _resolve {
+  my $params_ref   = shift;
+  my $digest       = shift;
+  my $tmp_fh       = shift;
+  my $tmp_filename = shift;
 
-        # recommended by perlport(1) prior to unlink/rename calls
-        close $tmp_fh;
-        unlink $tmp_filename;
-
-        croak("error printing to temporary file: $save_errstr\n");
-      }
-
-      if ( exists $params_ref->{CHECKSUM}
-        and !exists $params_ref->{checksum} ) {
-        $digest->add($$input);
-      }
-    }
-    if ( exists $params_ref->{CHECKSUM} and !exists $params_ref->{checksum} )
-    {
-      $params_ref->{checksum} = $digest->hexdigest;
-    }
+  if ( exists $params_ref->{CHECKSUM}
+    and !exists $params_ref->{checksum} ) {
+    $params_ref->{checksum} = $digest->hexdigest;
   }
 
   eval {
@@ -146,9 +221,8 @@ sub write_file {
   };
   if ($@) {
     # recommended by perlport(1) prior to unlink/rename calls
-    close $tmp_fh;
-    unlink $tmp_filename;
-
+    close($tmp_fh) if defined $tmp_fh;
+    unlink($tmp_filename) if defined $tmp_filename;
     die $@;
   }
 
@@ -294,27 +368,33 @@ File::AtomicWrite - writes files atomically via rename()
 
   use File::AtomicWrite ();
 
-  eval {
+  # standalone method: requires filename and
+  # input data (filehandle or scalar ref)
+  File::AtomicWrite->write_file(
+    { file  => 'data.dat',
+      input => $filehandle
+    }
+  );
 
-    File::AtomicWrite->write_file(
-      { file  => 'data.dat',
-        input => $filehandle
-      }
-    );
+  # how paranoid are you?
+  File::AtomicWrite->write_file(
+    { file     => '/etc/passwd',
+      input    => \$scalarref,
+      CHECKSUM => 1,
+      min_size => 100
+    }
+  );
 
-    # how paranoid are you?
-    File::AtomicWrite->write_file(
-      { file     => '/etc/passwd',
-        input    => \$scalarref,
-        CHECKSUM => 1,
-        min_size => 100
-      }
-    );
+  # OO interface
+  my $aw = File::AtomicWrite->new({ file => 'name' });
 
-  };
-  if ($@) {
-    die "uh oh: $@";
-  }
+  my $tmp_fh   = $aw->fh;
+  my $tmp_file = $aw->filename;
+
+  print $tmp_fh ...
+
+  $aw->checksum($sha1_hexdigest);
+  $aw->commit;
 
 =head1 DESCRIPTION
 
@@ -327,7 +407,15 @@ headaches, for example).
 Should anything go awry, the module will C<die> or C<croak> as
 appropriate. All error messages created by the module will end with a
 newline, though those from submodules (L<File::Temp|File::Temp>,
-L<File::Path>) may not.
+L<File::Path>) may not. Therefore, all calls should be wrapped in
+eval blocks:
+
+  eval {
+    File::AtomicWrite->write_file(...);
+  };
+  if ($@) {
+    die "uh oh: $@";
+  }
 
 =head1 METHODS
 
@@ -335,14 +423,51 @@ L<File::Path>) may not.
 
 =item C<write_file>
 
-Class method. Performs the various required steps in a single method
-call. Requires that the complete file data be passed via the C<input>
-option. Only if all checks pass will the B<input> data be moved to the
+Class method. Requires a hash reference that contains the B<input> and
+B<file> options. Performs the various required steps in a single method
+call. Only if all checks pass will the B<input> data be moved to the
 B<file> file via C<rename()>. If not, the module will throw an error,
 and attempt to cleanup any temporary files created.
 
 See L<"OPTIONS"> for details on the various required and optional
-options that can be passed as a hash reference to C<write_file>.
+values that can be passed to C<write_file> in a hash reference.
+
+=item C<new>
+
+Takes same options as C<write_file> (excepting the C<input> option),
+returns an object.
+
+In the event a rollback is required, C<undef> the File::AtomicWrite
+object. The object destructor should then unlink the temporary file.
+However, should the process receive a TERM or some other catchable
+signal that causes it to exit, the cleanup will not be run. This edge
+case will need to be handled by the caller. See perlipc(1) for more
+information on signal handling.
+
+  my $aw = File::AtomicWrite->new({file => 'somefile'});
+
+  $SIG{TERM} = { undef $aw };
+  ...
+
+=item C<fh>
+
+Instance method, returns a filehandle for the temporary file.
+
+=item C<filename>
+
+Instance method, returns the file name of the temporary file.
+
+=item C<checksum>
+
+Instance method. Takes a single argument that should contain the
+L<Digest::SHA1|Digest::SHA1> C<hexdigest> of the data written to the
+temporary file. Enables the C<CHECKSUM> option.
+
+=item C<commit>
+
+Instance method. Call once finished with the temporary file. A number of
+sanity checks (if enabled via the appropriate option) will be performed.
+If these pass, the temporary file will be renamed to the real filename.
 
 =back
 
