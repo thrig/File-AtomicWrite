@@ -273,7 +273,7 @@ sub _check_checksum {
   my $checksum = shift;
 
   seek( $tmp_fh, 0, 0 )
-    or croak("could not seek() on temporary filehandle\n");
+    or die("tmp fh seek() error: $!\n");
 
   my $digest = Digest::SHA1->new;
   $digest->addfile($tmp_fh);
@@ -290,10 +290,15 @@ sub _check_checksum {
 sub _check_min_size {
   my $tmp_fh   = shift;
   my $min_size = shift;
-  my $written  = tell($tmp_fh);
 
+  # Must seek, as OO method allows the fh or filename to be passed off
+  # and used by who knows what first.
+  seek( $tmp_fh, 0, 2 )
+    or die("tmp fh seek() error: $!\n");
+
+  my $written = tell($tmp_fh);
   if ( $written == -1 ) {
-    die("unable to tell() on temporary filehandle\n");
+    die("tmp fh tell() error: $!\n");
   } elsif ( $written < $min_size ) {
     croak("bytes written failed to exceed min_size required\n");
   }
