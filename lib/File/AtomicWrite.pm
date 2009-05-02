@@ -20,7 +20,7 @@ use File::Basename qw(dirname);
 use File::Path qw(mkpath);
 use File::Temp qw(tempfile);
 
-our $VERSION = '0.90';
+our $VERSION = '0.91';
 
 # Default options
 my %default_params = ( template => ".tmp.XXXXXXXX", MKPATH => 0 );

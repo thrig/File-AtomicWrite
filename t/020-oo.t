@@ -68,7 +68,7 @@ diag($@) if $@;
 
 # checksum instance method test
 SKIP: {
-  require Digest::SHA1;
+  eval { require Digest::SHA1; };
   skip( "lack Digest::SHA1 so sorry", 1 ) if $@;
 
   my $really_important = "Can't corrupt this\n http://xkcd.com/108/ \n";
