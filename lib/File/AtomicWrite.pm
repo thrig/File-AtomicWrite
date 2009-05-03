@@ -508,7 +508,7 @@ as otherwise L<File::Temp|File::Temp> will throw an error.
 
 =item B<min_size>
 
-Specify a minimum size (in bytes) that the data written must exceede. If
+Specify a minimum size (in bytes) that the data written must exceed. If
 not, the module throws an error.
 
 =item B<mode>
