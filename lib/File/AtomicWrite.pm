@@ -211,6 +211,14 @@ sub _resolve {
     $params_ref->{checksum} = $digest->hexdigest;
   }
 
+  # Help the bits reach the disk
+  $tmp_fh->flush() or die "flush() error: $!\n";
+  # TODO "not implemented on all platforms" per IO::Handle docs - if
+  # this causes false failures, will need to wrap in an eval block and
+  # only pass sync errors, or also create an option that lets the caller
+  # decide whether these are performed.)
+  $tmp_fh->sync() or die "sync() error: $!\n";
+
   eval {
     if ( exists $params_ref->{min_size} ) {
       _check_min_size( $tmp_fh, $params_ref->{min_size} );
@@ -226,8 +234,13 @@ sub _resolve {
     die $@;
   }
 
-  # recommended by perlport(1) prior to unlink/rename calls
-  close($tmp_fh);
+  # recommended by perlport(1) prior to unlink/rename calls.
+  #
+  # TODO I've seen false positives from close() calls, though certain
+  # file systems only report errors at close() time. If someone can
+  # document a false positive, instead create an option and let the
+  # caller decide.
+  close($tmp_fh) or die "problem closing filehandle: $!\n";
 
   eval {
     if ( exists $params_ref->{mode} ) {
@@ -421,6 +434,11 @@ eval blocks:
   if ($@) {
     die "uh oh: $@";
   }
+
+The module attempts to C<flush> and C<sync> the temporary filehandle
+prior to the C<rename()> call. This may cause portability problems. If
+so, please let the author know. Also notify the author if false
+positives from the C<close> call are observed.
 
 =head1 METHODS
 
