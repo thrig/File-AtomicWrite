@@ -1,3 +1,5 @@
+#!/usr/bin/perl
+#
 # Tests for standalone write_file class method interface.
 #
 # Note that these tests could easily run afoul various perlport(1)

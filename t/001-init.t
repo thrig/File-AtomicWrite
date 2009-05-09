@@ -1,3 +1,5 @@
+#!/usr/bin/perl
+#
 # Basic training tests.
 
 use warnings;

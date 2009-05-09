@@ -1,3 +1,5 @@
+#!/usr/bin/perl
+#
 # Tests for the OO interface
 #
 # Note that these tests could easily run afoul various perlport(1)
