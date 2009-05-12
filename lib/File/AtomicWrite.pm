@@ -27,6 +27,8 @@ our $VERSION = '0.93';
 # Default options
 my %default_params = ( template => ".tmp.XXXXXXXX", MKPATH => 0 );
 
+my ( $tmp_fh, $tmp_filename );
+
 # Class method that accepts output filename, perhaps optional tmp file
 # template, and a filehandle or scalar ref, and handles all the details
 # in a single shot.
@@ -38,14 +40,11 @@ sub write_file {
     croak("missing 'input' option");
   }
 
-  my ( $params_ref, $digest, $tmp_fh, $tmp_filename ) = _init($user_params);
+  my ( $params_ref, $digest ) = _init($user_params);
 
   # Attempt cleanup if things go awry
-  local $SIG{TERM} = sub {
-    # recommended by perlport(1) prior to unlink/rename calls
-    close($tmp_fh) if defined $tmp_fh;
-    unlink($tmp_filename) if defined $tmp_filename;
-  };
+  local $SIG{TERM} = \&_cleanup;
+  local $SIG{INT}  = \&_cleanup;
 
   my $input_ref = ref $params_ref->{input};
   unless ( $input_ref eq 'SCALAR' or $input_ref eq 'GLOB' ) {
@@ -56,11 +55,7 @@ sub write_file {
   if ( $input_ref eq 'SCALAR' ) {
     unless ( print $tmp_fh $$input ) {
       my $save_errstr = $!;
-
-      # recommended by perlport(1) prior to unlink/rename calls
-      close($tmp_fh) if defined $tmp_fh;
-      unlink($tmp_filename) if defined $tmp_filename;
-
+      _cleanup();
       croak("error printing to temporary file: $save_errstr\n");
     }
     if ( exists $params_ref->{CHECKSUM}
@@ -72,11 +67,7 @@ sub write_file {
     while ( my $line = <$input> ) {
       unless ( print $tmp_fh $line ) {
         my $save_errstr = $!;
-
-        # recommended by perlport(1) prior to unlink/rename calls
-        close($tmp_fh) if defined $tmp_fh;
-        unlink($tmp_filename) if defined $tmp_filename;
-
+        _cleanup();
         croak("error printing to temporary file: $save_errstr\n");
       }
 
@@ -98,18 +89,18 @@ sub new {
   croak("option 'input' only for write_file class method")
     if exists $user_param->{input};
 
-  @{$self}{qw(_params _digest _tmp_fh _tmp_filename)} = _init($user_param);
+  @{$self}{qw(_params _digest)} = _init($user_param);
 
   bless $self, $class;
   return $self;
 }
 
 sub fh {
-  return shift->{_tmp_fh};
+  return $tmp_fh;
 }
 
 sub filename {
-  return shift->{_tmp_filename};
+  return $tmp_filename;
 }
 
 sub checksum {
@@ -126,15 +117,18 @@ sub checksum {
 
 sub commit {
   my $self = shift;
-  _resolve( @{$self}{qw(_params _digest _tmp_fh _tmp_filename)} );
+  _resolve( @{$self}{qw(_params _digest)} );
 }
 
 sub DESTROY {
-  my $self = shift;
+  _cleanup();
+}
 
+# For when (if) things go awry
+sub _cleanup {
   # recommended by perlport(1) prior to unlink/rename calls
-  close $self->{_tmp_fh} if defined $self->{_tmp_fh};
-  unlink $self->{_tmp_filename} if defined $self->{_tmp_filename};
+  close $tmp_fh if defined $tmp_fh;
+  unlink $tmp_filename if defined $tmp_filename;
 }
 
 sub _init {
@@ -168,7 +162,7 @@ sub _init {
     $params_ref->{tmpdir} = $params_ref->{_dir};
   }
 
-  my ( $tmp_fh, $tmp_filename ) = tempfile(
+  ( $tmp_fh, $tmp_filename ) = tempfile(
     $params_ref->{template},
     DIR    => $params_ref->{tmpdir},
     UNLINK => 0
@@ -181,7 +175,7 @@ sub _init {
     binmode($tmp_fh);
   }
 
-  return $params_ref, $digest, $tmp_fh, $tmp_filename;
+  return $params_ref, $digest;
 }
 
 sub _init_checksum {
@@ -203,10 +197,8 @@ sub _init_checksum {
 }
 
 sub _resolve {
-  my $params_ref   = shift;
-  my $digest       = shift;
-  my $tmp_fh       = shift;
-  my $tmp_filename = shift;
+  my $params_ref = shift;
+  my $digest     = shift;
 
   if ( exists $params_ref->{CHECKSUM}
     and !exists $params_ref->{checksum} ) {
@@ -223,16 +215,14 @@ sub _resolve {
 
   eval {
     if ( exists $params_ref->{min_size} ) {
-      _check_min_size( $tmp_fh, $params_ref->{min_size} );
+      _check_min_size( $params_ref->{min_size} );
     }
     if ( exists $params_ref->{CHECKSUM} ) {
-      _check_checksum( $tmp_fh, $params_ref->{checksum} );
+      _check_checksum( $params_ref->{checksum} );
     }
   };
   if ($@) {
-    # recommended by perlport(1) prior to unlink/rename calls
-    close($tmp_fh) if defined $tmp_fh;
-    unlink($tmp_filename) if defined $tmp_filename;
+    _cleanup();
     die $@;
   }
 
@@ -244,6 +234,9 @@ sub _resolve {
   # caller decide.
   close($tmp_fh) or die "problem closing filehandle: $!\n";
 
+  # spare subsequent useless close attempts, if any
+  undef $tmp_fh;
+
   if ( exists $params_ref->{mode} ) {
     croak("invalid mode data\n")
       if !defined $params_ref->{mode}
@@ -252,7 +245,7 @@ sub _resolve {
     my $count = chmod( $params_ref->{mode}, $tmp_filename );
     if ( $count != 1 ) {
       my $save_errstr = $!;
-      unlink $tmp_filename;
+      _cleanup();
       die "unable to chmod temporary file: $save_errstr\n";
     }
   }
@@ -260,16 +253,19 @@ sub _resolve {
   if ( exists $params_ref->{owner} ) {
     eval { _set_ownership( $params_ref->{owner}, $tmp_filename ); };
     if ($@) {
-      unlink $tmp_filename;
+      _cleanup();
       die $@;
     }
   }
 
   unless ( rename( $tmp_filename, $params_ref->{file} ) ) {
     my $save_errstr = $!;
-    unlink $tmp_filename;
+    _cleanup();
     croak "unable to rename file: $save_errstr\n";
   }
+
+  # spare subsequent useless unlink attempts, if any
+  undef $tmp_filename;
 
   return 1;
 }
@@ -291,7 +287,6 @@ sub _mkpath {
 }
 
 sub _check_checksum {
-  my $tmp_fh   = shift;
   my $checksum = shift;
 
   seek( $tmp_fh, 0, 0 )
@@ -310,7 +305,6 @@ sub _check_checksum {
 }
 
 sub _check_min_size {
-  my $tmp_fh   = shift;
   my $min_size = shift;
 
   # Must seek, as OO method allows the fh or filename to be passed off
@@ -456,13 +450,14 @@ returns an object.
 
 In the event a rollback is required, C<undef> the File::AtomicWrite
 object. The object destructor should then unlink the temporary file.
-However, should the process receive a TERM or some other catchable
+However, should the process receive a TERM, INT, or some other catchable
 signal that causes it to exit, the cleanup will not be run. This edge
 case will need to be handled by the caller. Consult perlipc(1) for more
 information on signal handling.
 
   my $aw     = File::AtomicWrite->new({file => 'somefile'});
-  $SIG{TERM} = { undef $aw };
+  $SIG{TERM} = sub { undef $aw };
+  $SIG{INT}  = sub { undef $aw };
   ...
 
 =item C<fh>
