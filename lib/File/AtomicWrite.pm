@@ -1,3 +1,5 @@
+# -*- Perl -*-
+#
 # Like IO::AtomicWrite, except uses File::Temp to create the temporary
 # file, and offers various degrees of more paranoid write handling, and
 # means to set Unix file permissions and ownerships on the resulting
