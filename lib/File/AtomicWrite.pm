@@ -22,7 +22,7 @@ use File::Basename qw(dirname);
 use File::Path qw(mkpath);
 use File::Temp qw(tempfile);
 
-our $VERSION = '0.93';
+our $VERSION = '0.94';
 
 # Default options
 my %default_params = ( template => ".tmp.XXXXXXXX", MKPATH => 0 );
@@ -620,7 +620,7 @@ L<File::Temp|File::Temp>, L<File::Path|File::Path>, L<File::Basename|File::Basen
 
 Alternatives, depending on the need, include:
 
-L<IO::Atomic|IO::Atomic>, L<File::Transaction|File::Transaction>, L<File::Transaction::Atomic|File::Transaction::Atomic>
+L<IO::Atomic|IO::Atomic>, L<File::Transaction|File::Transaction>, L<File::Transaction::Atomic|File::Transaction::Atomic>, L<Directory::Transactional|Directory::Transactional>
 
 =head1 AUTHOR
 
