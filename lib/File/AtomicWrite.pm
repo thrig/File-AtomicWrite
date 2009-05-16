@@ -207,11 +207,10 @@ sub _resolve {
 
   # Help the bits reach the disk
   $tmp_fh->flush() or die "flush() error: $!\n";
-  # TODO "not implemented on all platforms" per IO::Handle docs - if
-  # this causes false failures, will need to wrap in an eval block and
-  # only pass sync errors, or also create an option that lets the caller
-  # decide whether these are performed.)
-  $tmp_fh->sync() or die "sync() error: $!\n";
+  # TODO may need eval or exclude on other platforms
+  if ( $^O !~ m/Win32/ ) {
+    $tmp_fh->sync() or die "sync() error: $!\n";
+  }
 
   eval {
     if ( exists $params_ref->{min_size} ) {
