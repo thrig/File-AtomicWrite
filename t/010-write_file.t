@@ -10,7 +10,7 @@
 use warnings;
 use strict;
 
-use Test::More tests => 26;
+use Test::More tests => 27;
 BEGIN { use_ok('File::AtomicWrite') }
 
 can_ok( 'File::AtomicWrite', qw{write_file} );
@@ -20,6 +20,7 @@ BEGIN { use_ok('File::Spec') }
 can_ok( 'File::Spec', qw{catfile tmpdir} );
 
 BEGIN { use_ok('File::Temp') }
+BEGIN { use_ok('File::Path') }
 
 # FAILURE TO READ THE DOCS
 {
@@ -35,6 +36,10 @@ BEGIN { use_ok('File::Temp') }
 }
 
 my $work_dir = File::Temp::tempdir( CLEANUP => 1 );
+
+END {
+  File::Path::rmtree($work_dir);
+}
 
 SKIP: {
   skip( "no work directory", 11 ) unless defined $work_dir and -d $work_dir;
@@ -206,10 +211,14 @@ SKIP: {
 # BSD or Solaris directory group id semantics are in play, but detecting
 # that would be annoying.
 SKIP: {
-  my $user_name  = getpwuid($<) || undef;
-  my $user_uid   = $<           || '';
-  my $group_name = getgrgid($() || undef;
-  my $group_gid  = $(           || '';
+  my ( $user_name, $user_uid, $group_name, $group_gid );
+  # getpwuid unimplemented on a certain OS, try to skip.
+  eval {
+    $user_name  = getpwuid($<) || undef;
+    $user_uid   = $<           || '';
+    $group_name = getgrgid($() || undef;
+    $group_gid  = $(           || '';
+  };
 
   skip( "no suitable login data to test owner option", 5 )
     unless defined $user_name
