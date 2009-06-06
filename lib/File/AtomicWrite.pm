@@ -21,8 +21,9 @@ use Carp qw(croak);
 use File::Basename qw(dirname);
 use File::Path qw(mkpath);
 use File::Temp qw(tempfile);
+use IO::Handle;
 
-our $VERSION = '0.95';
+our $VERSION = '0.96';
 
 # Default options
 my %default_params = ( template => ".tmp.XXXXXXXX", MKPATH => 0 );
