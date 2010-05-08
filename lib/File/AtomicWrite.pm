@@ -5,7 +5,7 @@
 # means to set Unix file permissions and ownerships on the resulting
 # file. Run perldoc(1) on this module for more information.
 #
-# Copyright 2009 by Jeremy Mates.
+# Copyright 2009-2010 by Jeremy Mates.
 #
 # This module is free software; you can redistribute it and/or modify it
 # under the Artistic license.
@@ -23,16 +23,20 @@ use File::Path qw(mkpath);
 use File::Temp qw(tempfile);
 use IO::Handle;
 
-our $VERSION = '0.96';
+our $VERSION = '0.99';
 
 # Default options
 my %default_params = ( template => ".tmp.XXXXXXXX", MKPATH => 0 );
 
 my ( $tmp_fh, $tmp_filename );
 
-# Class method that accepts output filename, perhaps optional tmp file
-# template, and a filehandle or scalar ref, and handles all the details
-# in a single shot.
+######################################################################
+#
+# Class methods
+
+# Accepts output filename, perhaps optional tmp file template, and
+# a filehandle or scalar ref, and handles all the details in a
+# single shot.
 sub write_file {
   my $class = shift;
   my $user_params = shift || {};
@@ -95,6 +99,10 @@ sub new {
   bless $self, $class;
   return $self;
 }
+
+######################################################################
+#
+# Instance methods
 
 sub fh {
   return $tmp_fh;
@@ -366,6 +374,8 @@ sub _set_ownership {
 
 1;
 
+__END__
+
 =head1 NAME
 
 File::AtomicWrite - writes files atomically via rename()
@@ -392,7 +402,12 @@ File::AtomicWrite - writes files atomically via rename()
   );
 
   # OO interface
-  my $aw = File::AtomicWrite->new({ file => 'name' });
+  my $aw = File::AtomicWrite->new(
+    { file     => 'name',
+      min_size => 100,
+      ...
+    }
+  );
 
   my $tmp_fh   = $aw->fh;
   my $tmp_file = $aw->filename;
@@ -445,8 +460,9 @@ values that can be passed to C<write_file> in a hash reference.
 
 =item C<new>
 
-Takes the same options as C<write_file> (excepting the C<input> option),
-returns an object.
+Takes all the same options as C<write_file>, excepting the C<input>
+option, and returns an object. Sanity checks are deferred until the
+B<commit> method is called.
 
 In the event a rollback is required, C<undef> the File::AtomicWrite
 object. The object destructor should then unlink the temporary file.
@@ -628,7 +644,7 @@ Jeremy Mates, E<lt>jmates@sial.orgE<gt>
 
 =head1 COPYRIGHT
 
-Copyright 2009 by Jeremy Mates.
+Copyright 2009-2010 by Jeremy Mates.
 
 This program is free software; you can redistribute it and/or modify it
 under the Artistic license.
