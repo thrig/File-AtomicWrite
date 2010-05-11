@@ -10,7 +10,7 @@
 use warnings;
 use strict;
 
-use Test::More tests => 27;
+use Test::More tests => 28;
 BEGIN { use_ok('File::AtomicWrite') }
 
 can_ok( 'File::AtomicWrite', qw{write_file} );
@@ -136,9 +136,33 @@ SKIP: {
     { file    => File::Spec->catfile( $work_dir, "binmode1" ),
       input   => \$binary_data,
       BINMODE => 1
-    }
+    },
+    1
   );
-  is( $binary_data, $binary_result, 'BINMODE write test' );
+  is( $binary_result, $binary_data, 'BINMODE write test' );
+
+  # binmode_layer - "wide" character test... might only cause "wide char"
+  # diagnostic warnings, depending on what is wrong...
+  my $utf8_data = "\x{80AA}";
+  eval {
+    File::AtomicWrite->write_file(
+      { file          => File::Spec->catfile( $work_dir, "utf8" ),
+        input         => \$utf8_data,
+        binmode_layer => ':utf8'
+      }
+    );
+  };
+  if ($@) {
+    chomp $@;
+    diag("Unexpected write_file failure: $@\n");
+  }
+
+  my $utf8_fh;
+  open( $utf8_fh, '<', File::Spec->catfile( $work_dir, "utf8" ) )
+    or diag("Cannot open utf8 file: $!\n");
+  binmode( $utf8_fh, ':utf8' );
+  my $utf8_result = do { local $/ = undef; <$utf8_fh> };
+  is( $utf8_result, $utf8_data, 'utf8 write test' );
 
   # template - for failure only, cannot really inspect tempfile name
   # without some annoying trickery with only a write_file method...
@@ -255,6 +279,7 @@ SKIP: {
 # to the expected output file. Use for tests expected to pass.
 sub test_write_file {
   my $param_ref = shift;
+  my $binmode = shift || 0;
 
   eval { File::AtomicWrite->write_file($param_ref); };
   if ($@) {
@@ -265,5 +290,8 @@ sub test_write_file {
   my $fh;
   open( $fh, '<', $param_ref->{file} )
     or diag("Cannot open output file: $!\n");
+  if ($binmode) {
+    binmode($fh);
+  }
   return do { local $/; <$fh> };
 }
