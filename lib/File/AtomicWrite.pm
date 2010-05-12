@@ -47,8 +47,8 @@ sub write_file {
 
   # Attempt cleanup if things go awry (use the OO interface and custom
   # signal handlers of your own if this is a problem)
-  $SIG{TERM} = sub { _cleanup( $tmp_fh, $tmp_filename ); exit };
-  $SIG{INT}  = sub { _cleanup( $tmp_fh, $tmp_filename ); exit };
+  local $SIG{TERM} = sub { _cleanup( $tmp_fh, $tmp_filename ); exit };
+  local $SIG{INT}  = sub { _cleanup( $tmp_fh, $tmp_filename ); exit };
 
   my $input_ref = ref $params_ref->{input};
   unless ( $input_ref eq 'SCALAR' or $input_ref eq 'GLOB' ) {
@@ -456,7 +456,7 @@ positives from the C<close> call are observed.
 
 =over 4
 
-=item C<write_file> I<options hash reference>
+=item B<write_file> I<options hash reference>
 
 Requires a hash reference that must contain both the B<input> and
 B<file> options. Performs the various required steps in a single method
@@ -467,7 +467,12 @@ attempt to cleanup any temporary files created.
 See L<"OPTIONS"> for additional settings that can be passed to
 C<write_file>.
 
-=item C<new> I<options hash reference>
+B<write_file> installs C<local> signal handlers for C<INT> and C<TERM>
+to try to cleanup any active temporary files if the process is killed.
+If this is a problem, use the OO interface, and setup appropriate signal
+handlers for the application.
+
+=item B<new> I<options hash reference>
 
 Takes all the same options as C<write_file>, excepting the C<input>
 option, and returns an object. Sanity checks are deferred until the
@@ -488,7 +493,7 @@ cleanup code to run:
   ...
 
 Consult perlipc(1) for more information on signal handling, and the C<eg/cleanup-
-test> script under this module distrbution for example code.
+test> script under this module distribution for example code.
 
 Instances must not be reused; create a new instance instead of calling
 B<new> again on an existing instance. Reuse may cause undefined behavior
@@ -500,21 +505,21 @@ or other unexpected problems.
 
 =over 4
 
-=item C<fh>
+=item B<fh>
 
 Returns the temporary filehandle.
 
-=item C<filename>
+=item B<filename>
 
 Returns the file name of the temporary file.
 
-=item C<checksum> I<SHA1 hexdigest>
+=item B<checksum> I<SHA1 hexdigest>
 
 Takes a single argument that must contain the L<Digest::SHA1>
 C<hexdigest> of the data written to the temporary file. Enables the
 B<CHECKSUM> option.
 
-=item C<commit>
+=item B<commit>
 
 Call this method once finished with the temporary file. A number of
 sanity checks (if enabled via the appropriate L<"OPTIONS">) will be
