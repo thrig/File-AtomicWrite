@@ -481,9 +481,10 @@ that can be passed to C<new>.
 
 In the event a rollback is required, C<undef> the File::AtomicWrite
 object. The object destructor should then unlink the temporary file.
-However, should the process receive a TERM, INT, or similar uncaught
-signal that causes the script to exit, the temporary file will not be
-cleaned up. A signal handler must be installed, which then allows the
+However, should the process receive a TERM, INT, or other signal that
+causes the script to exit, the temporary file will not be cleaned up
+(as observed during testing on several modern *BSD and Linux
+variants). A signal handler must be installed, which then allows the
 cleanup code to run:
 
   my $aw = File::AtomicWrite->new({file => 'somefile'});
@@ -492,8 +493,8 @@ cleanup code to run:
   }
   ...
 
-Consult perlipc(1) for more information on signal handling, and the C<eg/cleanup-
-test> script under this module distribution for example code.
+Consult perlipc(1) for more information on signal handling, and the
+C<eg/cleanup-test> program under this module distribution.
 
 Instances must not be reused; create a new instance instead of calling
 B<new> again on an existing instance. Reuse may cause undefined behavior

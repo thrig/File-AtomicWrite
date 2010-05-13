@@ -6,9 +6,9 @@
 # statement inserted into the module to ensure it can be properly
 # killed off...
 #
-# perl cleanup-test oo
+# perl -I../lib cleanup-test oo
 #
-# perl -Ilib cleanup-test p
+# perl -I../lib cleanup-test p
 
 use strict;
 use warnings;
