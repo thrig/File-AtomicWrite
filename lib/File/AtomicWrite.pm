@@ -670,7 +670,23 @@ http://github.com/thrig/File-AtomicWrite/tree/master
 
 See perlport(1) for various portability problems possible with the
 C<rename> call. Consult rename(2) or equivalent for the system for any
-caveats about this system call.
+caveats about this system call. Note that rename(2) is used heavily by
+common programs such as mv(1) and rsync.
+
+File hard links created by ln(1) will be broken by this module, as this
+module has no way of knowing whether any other files link to the inode
+of the file being operated on:
+
+  % touch afile
+  % ln afile afilehardlink
+  % ls -i afile*          
+  3725607 afile		3725607 afilehardlink
+  % perl -MFile::AtomicWrite -e \
+    'File::AtomicWrite->write_file({file =>"afile",input=>\"foo"})' 
+  % ls -i afile*
+  3725622 afile		3725607 afilehardlink
+
+Union mounts might also be a problem.
 
 =head1 SEE ALSO
 
