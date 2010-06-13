@@ -1,0 +1,26 @@
+--- #YAML:1.0
+name: File-AtomicWrite
+abstract: writes files atomically via rename()
+version: 1.01
+author:
+  - Jeremy Mates <jmates@sial.org>
+license: artistic
+distribution_type: module
+requires:
+  perl: 5.006
+  Carp: 0
+  File::Path: 1.06
+  File::Temp: 0.18
+recommends:
+  Digest::SHA1: 2.10
+build_requires:
+  Test::More: 0.72
+  File::Path: 1.06
+  File::Spec: 3.26
+resources:
+  license: http://dev.perl.org/licenses/artistic.html
+  repository: http://github.com/thrig/File-AtomicWrite
+meta-spec:
+  version: 1.4
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+generated_by: hand
