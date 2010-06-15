@@ -20,6 +20,7 @@ build_requires:
 resources:
   license: http://dev.perl.org/licenses/artistic.html
   repository: http://github.com/thrig/File-AtomicWrite
+  bugtracker: https://rt.cpan.org/Public/Dist/Display.html?Name=File-AtomicWrite
 meta-spec:
   version: 1.4
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
