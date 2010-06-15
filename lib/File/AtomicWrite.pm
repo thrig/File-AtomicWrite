@@ -23,7 +23,7 @@ use File::Path qw(mkpath);
 use File::Temp qw(tempfile);
 use IO::Handle;
 
-our $VERSION = '1.01';
+our $VERSION = '1.02';
 
 # Default options
 my %default_params = ( MKPATH => 0, template => ".tmp.XXXXXXXX" );
@@ -656,11 +656,11 @@ directory, if that option is set.
 =head1 BUGS
 
 No known bugs.
-  
+
 =head2 Reporting Bugs
-  
+
 Newer versions of this module may be available from CPAN.
-  
+
 If the bug is in the latest version, send a report to the author.
 Patches that fix problems or add new features are welcome.
 
