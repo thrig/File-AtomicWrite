@@ -1,27 +1,35 @@
---- #YAML:1.0
-name: File-AtomicWrite
-abstract: writes files atomically via rename()
-version: 1.01
+---
+abstract: 'writes files atomically via rename()'
 author:
-  - Jeremy Mates <jmates@sial.org>
-license: artistic
-distribution_type: module
-requires:
-  perl: 5.006
-  Carp: 0
-  File::Path: 1.06
-  File::Temp: 0.18
-recommends:
-  Digest::SHA1: 2.10
+  - 'Jeremy Mates, <jmates@sial.org>'
 build_requires:
-  Test::More: 0.72
-  File::Path: 1.06
-  File::Spec: 3.26
+  ExtUtils::MakeMaker: 6.42
+  File::Path: 0
+  File::Spec: 0
+  Test::More: 0
+configure_requires:
+  ExtUtils::MakeMaker: 6.42
+distribution_type: module
+generated_by: 'Module::Install version 0.99'
+license: artistic
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: 1.4
+name: File-AtomicWrite
+no_index:
+  directory:
+    - inc
+    - t
+recommends:
+  Digest::SHA1: 0
+requires:
+  Carp: 0
+  File::Path: 0
+  File::Temp: 0.18
+  IO::Handle: 0
+  perl: 5.6.0
 resources:
+  bugtracker: https://rt.cpan.org/Public/Dist/Display.html?Name=File-AtomicWrite
   license: http://dev.perl.org/licenses/artistic.html
   repository: http://github.com/thrig/File-AtomicWrite
-  bugtracker: https://rt.cpan.org/Public/Dist/Display.html?Name=File-AtomicWrite
-meta-spec:
-  version: 1.4
-  url: http://module-build.sourceforge.net/META-spec-v1.4.html
-generated_by: hand
+version: 1.02
