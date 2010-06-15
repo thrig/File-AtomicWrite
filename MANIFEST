@@ -1,10 +1,5 @@
-lib/File/AtomicWrite.pm
-LICENSE
-Makefile.PL
-MANIFEST
-META.yml
-README
 eg/cleanup-test
+inc/Module/Install.pm
 inc/Module/Install/Base.pm
 inc/Module/Install/Can.pm
 inc/Module/Install/Fetch.pm
@@ -12,7 +7,12 @@ inc/Module/Install/Makefile.pm
 inc/Module/Install/Metadata.pm
 inc/Module/Install/Win32.pm
 inc/Module/Install/WriteAll.pm
-inc/Module/Install.pm
+lib/File/AtomicWrite.pm
+LICENSE
+Makefile.PL
+MANIFEST
+META.yml
+README
 t/001-init.t
 t/010-write_file.t
 t/020-oo.t
