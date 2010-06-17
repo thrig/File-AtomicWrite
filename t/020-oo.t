@@ -64,6 +64,9 @@ eval {
   ok( -f $filename, 'tmp filename should exist' );
 
   undef $aw;
+  # http://www.cpantesters.org/cpan/report/07445084-b19f-3f77-b713-d32bba55d77f
+  # false alarm or check too soon?
+  sleep 2;
   ok( !-f $filename, 'tmp filename should not exist' );
 };
 diag($@) if $@;
