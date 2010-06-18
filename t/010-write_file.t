@@ -141,28 +141,33 @@ SKIP: {
   );
   is( $binary_result, $binary_data, 'BINMODE write test' );
 
-  # binmode_layer - "wide" character test... might only cause "wide char"
-  # diagnostic warnings, depending on what is wrong...
-  my $utf8_data = "\x{80AA}";
-  eval {
-    File::AtomicWrite->write_file(
-      { file          => File::Spec->catfile( $work_dir, "utf8" ),
-        input         => \$utf8_data,
-        binmode_layer => ':utf8'
-      }
-    );
-  };
-  if ($@) {
-    chomp $@;
-    diag("Unexpected write_file failure: $@\n");
-  }
+  # http://www.cpantesters.org/cpan/report/ab5bf11a-79f6-11df-ae63-e0e88fbefd91
+SKIP: {
+    skip ":utf8 not supported on older versions", 1 unless $] >= 5.7;
 
-  my $utf8_fh;
-  open( $utf8_fh, '<', File::Spec->catfile( $work_dir, "utf8" ) )
-    or diag("Cannot open utf8 file: $!\n");
-  binmode( $utf8_fh, ':utf8' );
-  my $utf8_result = do { local $/ = undef; <$utf8_fh> };
-  is( $utf8_result, $utf8_data, 'utf8 write test' );
+    # binmode_layer - "wide" character test... might only cause "wide char"
+    # diagnostic warnings, depending on what is wrong...
+    my $utf8_data = "\x{80AA}";
+    eval {
+      File::AtomicWrite->write_file(
+        { file          => File::Spec->catfile( $work_dir, "utf8" ),
+          input         => \$utf8_data,
+          binmode_layer => ':utf8'
+        }
+      );
+    };
+    if ($@) {
+      chomp $@;
+      diag("Unexpected write_file failure: $@\n");
+    }
+
+    my $utf8_fh;
+    open( $utf8_fh, '<', File::Spec->catfile( $work_dir, "utf8" ) )
+      or diag("Cannot open utf8 file: $!\n");
+    binmode( $utf8_fh, ':utf8' );
+    my $utf8_result = do { local $/ = undef; <$utf8_fh> };
+    is( $utf8_result, $utf8_data, 'utf8 write test' );
+  }
 
   # template - for failure only, cannot really inspect tempfile name
   # without some annoying trickery with only a write_file method...

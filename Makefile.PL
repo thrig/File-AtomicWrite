@@ -1,7 +1,6 @@
 use inc::Module::Install;
 name 'File-AtomicWrite';
 all_from 'lib/File/AtomicWrite.pm';
-license 'artistic';
 
 perl_version '5.006';
 requires 'Carp'            => 0;
