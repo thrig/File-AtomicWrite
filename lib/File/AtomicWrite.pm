@@ -99,6 +99,19 @@ sub new {
   return $self;
 }
 
+sub safe_level {
+  my $class = shift;
+  my $level = shift || croak('safe_level() requires a value');
+  File::Temp->safe_level($level);
+}
+
+sub set_template {
+  my $class = shift;
+  my $template = shift || croak('set_template() requires a template');
+  $default_params{template} = $template;
+  return;
+}
+
 ######################################################################
 #
 # Instance methods
@@ -171,6 +184,10 @@ sub _init {
     }
   } else {
     $params_ref->{tmpdir} = $params_ref->{_dir};
+  }
+
+  if ( exists $params_ref->{safe_level} ) {
+    File::Temp->safe_level( $params_ref->{safe_level} );
   }
 
   my ( $tmp_fh, $tmp_filename ) = tempfile(
@@ -472,6 +489,23 @@ to try to cleanup any active temporary files if the process is killed.
 If this is a problem, use the OO interface, and setup appropriate signal
 handlers for the application.
 
+=item B<safe_level> I<safe_level value>
+
+Method to customize the L<File::Temp> module C<safe_level> value.
+Consult the L<File::Temp> documentation for more information on
+this option.
+
+Can also be set via the B<safe_level> option.
+
+=item B<set_template> I<File::Temp template>
+
+Method to customize the default L<File::Temp> template used when
+creating temporary files. NOTE: if customized, the template must contain
+a sufficient number of C<X> that terminate the template string, as
+otherwise L<File::Temp> will throw an error.
+
+Can also be set via the B<template> option.
+
 =item B<new> I<options hash reference>
 
 Takes all the same options as C<write_file>, excepting the C<input>
@@ -559,12 +593,22 @@ method. Scalar reference, or otherwise some filehandle reference that
 can be looped over via C<E<lt>E<gt>>. Supplies the data to be written
 to B<file>.
 
+=item B<safe_level> => I<safe_level value>
+
+Optional means to set the L<File::Temp> module C<safe_level> value.
+Consult the L<File::Temp> documentation for more information on
+this option.
+
+This value can also be set via the B<safe_level> class method.
+
 =item B<template> => I<File::Temp template>
 
 Template to supply to L<File::Temp>. Defaults to a reasonable value if
 unset. NOTE: if customized, the template must contain a sufficient
 number of C<X> that terminate the template string, as otherwise
 L<File::Temp> will throw an error.
+
+Can also be set via the B<set_template> class method.
 
 =item B<min_size> => I<size>
 

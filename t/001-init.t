@@ -1,6 +1,4 @@
 #!/usr/bin/perl
-#
-# Basic training tests.
 
 use warnings;
 use strict;
