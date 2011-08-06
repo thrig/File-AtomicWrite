@@ -15,18 +15,16 @@ package File::AtomicWrite;
 use strict;
 use warnings;
 
-require 5.006;
-
 use Carp qw(croak);
 use File::Basename qw(dirname);
 use File::Path qw(mkpath);
 use File::Temp qw(tempfile);
 use IO::Handle;
 
-our $VERSION = '1.03';
+our $VERSION = '1.06';    # this is a number, not a name
 
 # Default options
-my %default_params = ( MKPATH => 0, template => ".tmp.XXXXXXXX" );
+my %default_params = ( MKPATH => 0, template => ".tmp.XXXXXXXXX" );
 
 ######################################################################
 #
@@ -49,10 +47,11 @@ sub write_file {
   # signal handlers of your own if this is a problem)
   local $SIG{TERM} = sub { _cleanup( $tmp_fh, $tmp_filename ); exit };
   local $SIG{INT}  = sub { _cleanup( $tmp_fh, $tmp_filename ); exit };
+  local $SIG{__DIE__} = sub { _cleanup( $tmp_fh, $tmp_filename ) };
 
   my $input_ref = ref $params_ref->{input};
   unless ( $input_ref eq 'SCALAR' or $input_ref eq 'GLOB' ) {
-    croak("invalid type for input option: $input_ref\n");
+    croak( "invalid type for input option: " . ref $input_ref );
   }
 
   my $input = $params_ref->{input};
@@ -60,7 +59,7 @@ sub write_file {
     unless ( print $tmp_fh $$input ) {
       my $save_errstr = $!;
       _cleanup( $tmp_fh, $tmp_filename );
-      croak("error printing to temporary file: $save_errstr\n");
+      croak("error printing to temporary file: $save_errstr");
     }
     if ( exists $params_ref->{CHECKSUM}
       and !exists $params_ref->{checksum} ) {
@@ -72,7 +71,7 @@ sub write_file {
       unless ( print $tmp_fh $line ) {
         my $save_errstr = $!;
         _cleanup( $tmp_fh, $tmp_filename );
-        croak("error printing to temporary file: $save_errstr\n");
+        croak("error printing to temporary file: $save_errstr");
       }
 
       if ( exists $params_ref->{CHECKSUM}
@@ -179,7 +178,7 @@ sub _init {
       # partition sanity check
       my @dev_ids = map { ( stat $params_ref->{$_} )[0] } qw/_dir tmpdir/;
       if ( $dev_ids[0] != $dev_ids[1] ) {
-        croak("tmpdir and file directory on different partitions\n");
+        croak("tmpdir and file directory on different partitions");
       }
     }
   } else {
@@ -216,7 +215,7 @@ sub _init_checksum {
   if ( exists $params_ref->{CHECKSUM} and $params_ref->{CHECKSUM} ) {
     eval { require Digest::SHA1; };
     if ($@) {
-      croak("cannot checksum as lack Digest::SHA1\n");
+      croak("cannot checksum as lack Digest::SHA1");
     }
     $digest = Digest::SHA1->new;
   } else {
@@ -270,7 +269,7 @@ sub _resolve {
   undef $tmp_fh;
 
   if ( exists $params_ref->{mode} ) {
-    croak("invalid mode data\n")
+    croak("invalid mode data")
       if !defined $params_ref->{mode}
         or $params_ref->{mode} !~ m/^\d+$/;
 
@@ -293,7 +292,7 @@ sub _resolve {
   unless ( rename( $tmp_filename, $params_ref->{file} ) ) {
     my $save_errstr = $!;
     _cleanup( $tmp_fh, $tmp_filename );
-    croak "unable to rename file: $save_errstr\n";
+    croak "unable to rename file: $save_errstr";
   }
 
   # spare subsequent useless unlink attempts, if any
@@ -309,10 +308,10 @@ sub _mkpath {
   if ($mkpath) {
     mkpath($directory);
     if ( !-d $directory ) {
-      croak("could not create parent directory\n");
+      croak("could not create parent directory");
     }
   } else {
-    croak("parent directory does not exist\n");
+    croak("parent directory does not exist");
   }
 
   return 1;
@@ -331,7 +330,7 @@ sub _check_checksum {
   my $on_disk_checksum = $digest->hexdigest;
 
   if ( $on_disk_checksum ne $checksum ) {
-    croak("temporary file SHA1 hexdigest does not match supplied checksum\n");
+    croak("temporary file SHA1 hexdigest does not match supplied checksum");
   }
 
   return 1;
@@ -350,7 +349,7 @@ sub _check_min_size {
   if ( $written == -1 ) {
     die("tmp fh tell() error: $!\n");
   } elsif ( $written < $min_size ) {
-    croak("bytes written failed to exceed min_size required\n");
+    croak("bytes written failed to exceed min_size required");
   }
 
   return 1;
@@ -363,7 +362,7 @@ sub _set_ownership {
   my $filename = shift;
   my $owner    = shift;
 
-  croak("invalid owner data\n") if !defined $owner or length $owner < 1;
+  croak("invalid owner data") if !defined $owner or length $owner < 1;
 
   # defaults if nothing comes of the subsequent parsing
   my ( $uid, $gid ) = ( -1, -1 );
@@ -375,7 +374,7 @@ sub _set_ownership {
     $uid = $1;
   } else {
     ( $login, $pass, $user_uid, $user_gid ) = getpwnam($user_name)
-      or croak("user not in password database\n");
+      or croak("user not in password database");
     $uid = $user_uid;
   }
 
@@ -385,7 +384,7 @@ sub _set_ownership {
       $gid = $group_name;
     } else {
       my ( $group_name, $pass, $group_gid ) = getgrnam($group_name)
-        or croak("group not in group database\n");
+        or croak("group not in group database");
       $gid = $group_gid;
     }
   }
@@ -452,10 +451,8 @@ the C<rename> call is used to replace the target B<file>. The module
 optionally supports various sanity checks (B<min_size>, B<CHECKSUM>)
 that help ensure the data is written without errors.
 
-Should anything go awry, the module will C<die> or C<croak>. All error
-messages created by the module will end with a newline, though those
-from submodules (L<File::Temp>, L<File::Path>) may not. All calls should
-be wrapped in eval blocks:
+Should anything go awry, the module will C<die> or C<croak>. All calls
+should be wrapped in eval blocks:
 
   eval {
     File::AtomicWrite->write_file(...);
@@ -484,10 +481,10 @@ attempt to cleanup any temporary files created.
 See L<"OPTIONS"> for additional settings that can be passed to
 C<write_file>.
 
-B<write_file> installs C<local> signal handlers for C<INT> and C<TERM>
-to try to cleanup any active temporary files if the process is killed.
-If this is a problem, use the OO interface, and setup appropriate signal
-handlers for the application.
+B<write_file> installs C<local> signal handlers for C<INT>, C<TERM>, and
+C<__DIE__> to try to cleanup any active temporary files if the process
+is killed or dies. If these are a problem, use the OO interface, and
+setup appropriate signal handlers for the application.
 
 =item B<safe_level> I<safe_level value>
 
@@ -501,8 +498,11 @@ Can also be set via the B<safe_level> option.
 
 Method to customize the default L<File::Temp> template used when
 creating temporary files. NOTE: if customized, the template must contain
-a sufficient number of C<X> that terminate the template string, as
-otherwise L<File::Temp> will throw an error.
+a sufficient number of C<X> that suffix the template string, as
+otherwise L<File::Temp> will throw an error:
+
+  template => "mytmp.X",          # Wrong
+  template => "mytmp.XXXXXXXX",   # better
 
 Can also be set via the B<template> option.
 
@@ -528,7 +528,9 @@ cleanup code to run:
   ...
 
 Consult perlipc(1) for more information on signal handling, and the
-C<eg/cleanup-test> program under this module distribution.
+C<eg/cleanup-test> program under this module distribution. A
+C<__DIE__> signal handler may also be necessary, consult the C<die>
+L<perlfunc> documentation for details.
 
 Instances must not be reused; create a new instance instead of calling
 B<new> again on an existing instance. Reuse may cause undefined behavior
@@ -605,7 +607,7 @@ This value can also be set via the B<safe_level> class method.
 
 Template to supply to L<File::Temp>. Defaults to a reasonable value if
 unset. NOTE: if customized, the template must contain a sufficient
-number of C<X> that terminate the template string, as otherwise
+number of C<X> that suffix the template string, as otherwise
 L<File::Temp> will throw an error.
 
 Can also be set via the B<set_template> class method.
@@ -724,11 +726,11 @@ of the file being operated on:
   % touch afile
   % ln afile afilehardlink
   % ls -i afile*          
-  3725607 afile		3725607 afilehardlink
+  3725607 afile         3725607 afilehardlink
   % perl -MFile::AtomicWrite -e \
     'File::AtomicWrite->write_file({file =>"afile",input=>\"foo"})' 
   % ls -i afile*
-  3725622 afile		3725607 afilehardlink
+  3725622 afile         3725607 afilehardlink
 
 Union mounts might also be a problem.
 
