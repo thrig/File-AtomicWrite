@@ -21,7 +21,7 @@ use File::Path qw(mkpath);
 use File::Temp qw(tempfile);
 use IO::Handle;
 
-our $VERSION = '1.06';    # this is a number, not a name
+our $VERSION = '1.07';    # this is a number, not a name
 
 # Default options
 my %default_params = ( MKPATH => 0, template => ".tmp.XXXXXXXXX" );
@@ -465,6 +465,10 @@ The module attempts to C<flush> and C<sync> the temporary filehandle
 prior to the C<rename> call. This may cause portability problems. If
 so, please let the author know. Also notify the author if false
 positives from the C<close> call are observed.
+
+Note that some filesystems may also require a fsync call on a filehandle
+of the directory containing the file (see fsync(2) on RHEL, for
+example), to ensure that the directory data also reaches disk.
 
 =head1 CLASS METHODS
 
