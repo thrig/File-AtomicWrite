@@ -1,21 +1,25 @@
-use inc::Module::Install;
-name 'File-AtomicWrite';
-all_from 'lib/File/AtomicWrite.pm';
-
-perl_version '5.006';
-requires 'Carp'            => 0;
-requires 'File::Path'      => 0;
-requires 'File::Temp'      => 0.18;
-requires 'IO::Handle'      => 0;
-recommends 'Digest::SHA1'  => 0;
-test_requires 'Test::More' => 0;
-test_requires 'File::Path' => 0;
-test_requires 'File::Spec' => 0;
-
-resources
-  license    => 'http://dev.perl.org/licenses/artistic.html',
-  repository => 'http://github.com/thrig/File-AtomicWrite',
-  bugtracker =>
-  'https://rt.cpan.org/Public/Dist/Display.html?Name=File-AtomicWrite';
-
-WriteAll;
+use ExtUtils::MakeMaker;
+# See lib/ExtUtils/MakeMaker.pm for details of how to influence
+# the contents of the Makefile that is written.
+WriteMakefile(
+  NAME         => 'File::AtomicWrite',
+  VERSION_FROM => 'lib/File/AtomicWrite.pm',
+  PREREQ_PM    => {
+    Carp         => 0,
+    File::Path   => 0,
+    File::Temp   => 0.18,
+    IO::Handle   => 0,
+    Digest::SHA1 => 0,
+    Test::More   => 0,
+    File::Spec   => 0
+  },
+  ( $] >= 5.005
+    ?    ## Add these new keywords supported since 5.005
+      (
+      ABSTRACT_FROM =>
+        'lib/File/AtomicWrite.pm',    # retrieve abstract from module
+      AUTHOR => 'Jeremy Mates <jmates@cpan.org>'
+      )
+    : ()
+  ),
+);
