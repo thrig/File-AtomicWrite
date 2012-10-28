@@ -21,7 +21,7 @@ use File::Path qw(mkpath);
 use File::Temp qw(tempfile);
 use IO::Handle;
 
-our $VERSION = '1.07';    # this is a number, not a name
+our $VERSION = '1.08';    # this is a number, not a name
 
 # Default options
 my %default_params = ( MKPATH => 0, template => ".tmp.XXXXXXXXX" );
