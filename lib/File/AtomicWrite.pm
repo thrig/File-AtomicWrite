@@ -21,7 +21,7 @@ use File::Path qw(mkpath);
 use File::Temp qw(tempfile);
 use IO::Handle;
 
-our $VERSION = '1.08';    # this is a number, not a name
+our $VERSION = '1.09';    # this is a number, not a name
 
 # Default options
 my %default_params = ( MKPATH => 0, template => ".tmp.XXXXXXXXX" );
@@ -478,7 +478,7 @@ call. Only if all checks pass will the B<input> data be moved to the
 B<file> file via C<rename>. If not, the module will throw an error, and
 attempt to cleanup any temporary files created.
 
-See L<"OPTIONS"> for additional settings that can be passed to
+See L</"OPTIONS"> for additional settings that can be passed to
 C<write_file>.
 
 B<write_file> installs C<local> signal handlers for C<INT>, C<TERM>, and
@@ -510,7 +510,7 @@ Can also be set via the B<template> option.
 
 Takes all the same options as C<write_file>, excepting the C<input>
 option, and returns an object. Sanity checks are deferred until the
-B<commit> method is called. See L<"OPTIONS"> for additional settings
+B<commit> method is called. See L</"OPTIONS"> for additional settings
 that can be passed to C<new>.
 
 In the event a rollback is required, C<undef> the File::AtomicWrite
@@ -559,7 +559,7 @@ B<CHECKSUM> option.
 =item B<commit>
 
 Call this method once finished with the temporary file. A number of
-sanity checks (if enabled via the appropriate L<"OPTIONS">) will be
+sanity checks (if enabled via the appropriate L</"OPTIONS">) will be
 performed. If these pass, the temporary file will be renamed to the
 real filename.
 
@@ -664,9 +664,9 @@ disk, but instead will rely on the value passed by the caller.
 
 =item B<CHECKSUM> => I<true or false>
 
-If true, L<Digest::SHA1|Digest::SHA1> will be used to checksum the data
-read back from the disk against the checksum derived from the data
-written out to the temporary file.
+If true, L<Digest::SHA1> will be used to checksum the data read back
+from the disk against the checksum derived from the data written out to
+the temporary file.
 
 Use the B<checksum> option (or B<checksum> method) to supply a
 L<Digest::SHA1> C<hexdigest> checksum. This will spare the
@@ -710,18 +710,18 @@ Newer versions of this module may be available from CPAN.
 If the bug is in the latest version, send a report to the author.
 Patches that fix problems or add new features are welcome.
 
-http://github.com/thrig/File-AtomicWrite/tree/master
+L<http://github.com/thrig/File-AtomicWrite>
 
 =head2 Known Issues
 
-See perlport(1) for various portability problems possible with the
-C<rename> call. Consult rename(2) or equivalent for the system for any
-caveats about this system call. Note that rename(2) is used heavily by
-common programs such as mv(1) and C<rsync>.
+See L<perlport> for various portability problems possible with the
+C<rename> call. Consult L<rename(2)> or equivalent for caveats. Note
+however that L<rename(2)> is used heavily by common programs such as
+L<mv(1)> and C<rsync>.
 
-File hard links created by ln(1) will be broken by this module, as this
-module has no way of knowing whether any other files link to the inode
-of the file being operated on:
+File hard links created by L<ln(1)> will be broken by this module, as
+this module has no way of knowing whether any other files link to the
+inode of the file being operated on:
 
   % touch afile
   % ln afile afilehardlink
