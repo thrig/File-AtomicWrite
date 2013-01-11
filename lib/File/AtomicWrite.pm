@@ -5,7 +5,7 @@
 # means to set Unix file permissions and ownerships on the resulting
 # file. Run perldoc(1) on this module for more information.
 #
-# Copyright 2009-2010,2012 by Jeremy Mates.
+# Copyright 2009-2010,2012-2013 by Jeremy Mates.
 #
 # This module is free software; you can redistribute it and/or modify it
 # under the Artistic license.
@@ -21,7 +21,7 @@ use File::Path qw(mkpath);
 use File::Temp qw(tempfile);
 use IO::Handle;
 
-our $VERSION = '1.10';    # this is a number, not a name
+our $VERSION = '1.11';
 
 # Default options
 my %default_params = ( MKPATH => 0, template => ".tmp.XXXXXXXXX" );
@@ -397,8 +397,7 @@ sub _set_ownership {
   return 1;
 }
 
-1;
-
+42;
 __END__
 
 =head1 NAME
@@ -757,7 +756,7 @@ Jeremy Mates, E<lt>jmates@cpan.orgE<gt>
 
 =head1 COPYRIGHT
 
-Copyright 2009-2010,2012 by Jeremy Mates.
+Copyright 2009-2010,2012-2013 by Jeremy Mates.
 
 This program is free software; you can redistribute it and/or modify it
 under the Artistic license.

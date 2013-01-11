@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!perl
 #
 # Tests for the OO interface
 #

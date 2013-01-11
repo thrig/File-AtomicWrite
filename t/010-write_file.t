@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!perl
 #
 # Tests for standalone write_file class method interface.
 #

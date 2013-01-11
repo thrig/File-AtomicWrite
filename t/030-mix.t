@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!perl
 #
 # Tests for both interfaces - notably to see if anything naughty is
 # being done with class variables in instance methods...
