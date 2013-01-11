@@ -9,3 +9,4 @@ t/010-write_file.t
 t/020-oo.t
 t/030-mix.t
 t/pod.t
+lib/File/AtomicWrite.pm
