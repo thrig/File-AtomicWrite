@@ -15,13 +15,13 @@ package File::AtomicWrite;
 use strict;
 use warnings;
 
-use Carp qw(croak);
-use File::Basename qw(dirname);
-use File::Path qw(mkpath);
-use File::Temp qw(tempfile);
+use Carp qw/croak/;
+use File::Basename qw/dirname/;
+use File::Path qw/mkpath/;
+use File::Temp qw/tempfile/;
 use IO::Handle;
 
-our $VERSION = '1.12';
+our $VERSION = '1.13';
 
 # Default options
 my %default_params = ( MKPATH => 0, template => ".tmp.XXXXXXXXX" );
@@ -38,7 +38,7 @@ sub write_file {
   my $user_params = shift || {};
 
   if ( !exists $user_params->{input} ) {
-    croak("missing 'input' option");
+    croak "missing 'input' option";
   }
 
   my ( $tmp_fh, $tmp_filename, $params_ref, $digest ) = _init($user_params);
@@ -51,7 +51,7 @@ sub write_file {
 
   my $input_ref = ref $params_ref->{input};
   unless ( $input_ref eq 'SCALAR' or $input_ref eq 'GLOB' ) {
-    croak( "invalid type for input option: " . ref $input_ref );
+    croak "invalid type for input option: " . ref $input_ref;
   }
 
   my $input = $params_ref->{input};
@@ -59,7 +59,7 @@ sub write_file {
     unless ( print $tmp_fh $$input ) {
       my $save_errstr = $!;
       _cleanup( $tmp_fh, $tmp_filename );
-      croak("error printing to temporary file: $save_errstr");
+      croak "error printing to temporary file: $save_errstr";
     }
     if ( exists $params_ref->{CHECKSUM}
       and !exists $params_ref->{checksum} ) {
@@ -71,7 +71,7 @@ sub write_file {
       unless ( print $tmp_fh $line ) {
         my $save_errstr = $!;
         _cleanup( $tmp_fh, $tmp_filename );
-        croak("error printing to temporary file: $save_errstr");
+        croak "error printing to temporary file: $save_errstr";
       }
 
       if ( exists $params_ref->{CHECKSUM}
@@ -89,7 +89,7 @@ sub new {
   my $self       = {};
   my $user_param = shift || {};
 
-  croak("option 'input' only for write_file class method")
+  croak "option 'input' only for write_file class method"
     if exists $user_param->{input};
 
   @{$self}{qw/_tmp_fh _tmp_filename _params _digest/} = _init($user_param);
@@ -100,13 +100,13 @@ sub new {
 
 sub safe_level {
   my $class = shift;
-  my $level = shift || croak('safe_level() requires a value');
+  my $level = shift || croak 'safe_level() requires a value';
   File::Temp->safe_level($level);
 }
 
 sub set_template {
   my $class = shift;
-  my $template = shift || croak('set_template() requires a template');
+  my $template = shift || croak 'set_template() requires a template';
   $default_params{template} = $template;
   return;
 }
@@ -126,7 +126,7 @@ sub filename {
 sub checksum {
   my $self = shift;
   $self->{_params}->{checksum} = shift
-    || croak('checksum requires an argument');
+    || croak 'checksum requires an argument';
 
   if ( !$self->{_digest} ) {
     $self->{_params}->{CHECKSUM} = 1;
@@ -160,7 +160,7 @@ sub _init {
 
   if ( !exists $params_ref->{file}
     or !defined $params_ref->{file} ) {
-    croak("missing 'file' option");
+    croak q{missing 'file' option};
   }
 
   my $digest = _init_checksum($params_ref);
@@ -178,7 +178,7 @@ sub _init {
       # partition sanity check
       my @dev_ids = map { ( stat $params_ref->{$_} )[0] } qw/_dir tmpdir/;
       if ( $dev_ids[0] != $dev_ids[1] ) {
-        croak("tmpdir and file directory on different partitions");
+        croak 'tmpdir and file directory on different partitions';
       }
     }
   } else {
@@ -215,7 +215,7 @@ sub _init_checksum {
   if ( exists $params_ref->{CHECKSUM} and $params_ref->{CHECKSUM} ) {
     eval { require Digest::SHA1; };
     if ($@) {
-      croak("cannot checksum as lack Digest::SHA1");
+      croak 'cannot checksum as lack Digest::SHA1';
     }
     $digest = Digest::SHA1->new;
   } else {
@@ -269,7 +269,7 @@ sub _resolve {
   undef $tmp_fh;
 
   if ( exists $params_ref->{mode} ) {
-    croak("invalid mode data")
+    croak 'invalid mode data'
       if !defined $params_ref->{mode}
         or $params_ref->{mode} !~ m/^\d+$/;
 
@@ -308,10 +308,10 @@ sub _mkpath {
   if ($mkpath) {
     mkpath($directory);
     if ( !-d $directory ) {
-      croak("could not create parent directory");
+      croak "could not create parent directory";
     }
   } else {
-    croak("parent directory does not exist");
+    croak "parent directory does not exist";
   }
 
   return 1;
@@ -330,7 +330,7 @@ sub _check_checksum {
   my $on_disk_checksum = $digest->hexdigest;
 
   if ( $on_disk_checksum ne $checksum ) {
-    croak("temporary file SHA1 hexdigest does not match supplied checksum");
+    croak 'temporary file SHA1 hexdigest does not match supplied checksum';
   }
 
   return 1;
@@ -349,7 +349,7 @@ sub _check_min_size {
   if ( $written == -1 ) {
     die("tmp fh tell() error: $!\n");
   } elsif ( $written < $min_size ) {
-    croak("bytes written failed to exceed min_size required");
+    croak 'bytes written failed to exceed min_size required';
   }
 
   return 1;
@@ -362,7 +362,7 @@ sub _set_ownership {
   my $filename = shift;
   my $owner    = shift;
 
-  croak("invalid owner data") if !defined $owner or length $owner < 1;
+  croak 'invalid owner data' if !defined $owner or length $owner < 1;
 
   # defaults if nothing comes of the subsequent parsing
   my ( $uid, $gid ) = ( -1, -1 );
@@ -374,7 +374,7 @@ sub _set_ownership {
     $uid = $1;
   } else {
     ( $login, $pass, $user_uid, $user_gid ) = getpwnam($user_name)
-      or croak("user not in password database");
+      or croak 'user not in password database';
     $uid = $user_uid;
   }
 
@@ -384,7 +384,7 @@ sub _set_ownership {
       $gid = $group_name;
     } else {
       my ( $group_name, $pass, $group_gid ) = getgrnam($group_name)
-        or croak("group not in group database");
+        or croak 'group not in group database';
       $gid = $group_gid;
     }
   }
