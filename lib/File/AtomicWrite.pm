@@ -21,10 +21,10 @@ use File::Path qw/mkpath/;
 use File::Temp qw/tempfile/;
 use IO::Handle;
 
-our $VERSION = '1.13';
+our $VERSION = '1.14';
 
 # Default options
-my %default_params = ( MKPATH => 0, template => ".tmp.XXXXXXXXX" );
+my %default_params = ( MKPATH => 0, template => ".tmp.XXXXXXXXXX" );
 
 ######################################################################
 #
