@@ -16,9 +16,8 @@ my %params = (
   },
   ( $] >= 5.005
     ? (
-      ABSTRACT_FROM =>
-        'lib/File/AtomicWrite.pm',    # retrieve abstract from module
-      AUTHOR => 'Jeremy Mates <jmates@cpan.org>'
+      ABSTRACT_FROM => 'lib/File/AtomicWrite.pm',      # retrieve abstract from module
+      AUTHOR        => 'Jeremy Mates <jmates@cpan.org>'
       )
     : ()
   ),
@@ -42,4 +41,4 @@ if ( $ExtUtils::MakeMaker::VERSION ge '6.48' ) {
   $params{MIN_PERL_VERSION} = 5.000000;
 }
 
-WriteMakefile(%params);
+WriteMakefile( ( MM->can('signature_target') ? ( SIGN => 1 ) : () ), %params );
