@@ -752,7 +752,7 @@ L<IO::Atomic>, L<File::Transaction>, L<File::Transaction::Atomic>, L<Directory::
 
 =head1 AUTHOR
 
-Jeremy Mates, E<lt>jmates@cpan.orgE<gt>
+thrig - Jeremy Mates (cpan:JMATES) C<< <jmates at cpan.org> >>
 
 =head1 COPYRIGHT
 
