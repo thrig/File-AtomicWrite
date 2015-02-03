@@ -17,12 +17,13 @@ This can be built and installed by running:
   make test
   make install
 
-Run perldoc(1) on File::AtomicWrite for more documentation.
+The documentation can then be read via:
+
+  perldoc File::AtomicWrite
 
 COPYRIGHT AND LICENCE
 
 Copyright (C) 2009-2015 Jeremy Mates
 
-This library is free software; you can redistribute it and/or modify it under
-the same terms as Perl itself, either Perl version 5.20 or, at your option, any
-later version of Perl 5 you may have available.
+This module is free software; you can redistribute it and/or modify it
+under the Artistic License (2.0).

@@ -21,7 +21,7 @@ use File::Path qw/mkpath/;
 use File::Temp qw/tempfile/;
 use IO::Handle;
 
-our $VERSION = '1.15';
+our $VERSION = '1.16';
 
 # Default options
 my %default_params = ( MKPATH => 0, template => ".tmp.XXXXXXXXXX" );
@@ -756,9 +756,9 @@ thrig - Jeremy Mates (cpan:JMATES) C<< <jmates at cpan.org> >>
 
 =head1 COPYRIGHT
 
-Copyright 2009-2010,2012-2013 by Jeremy Mates.
+Copyright (C) 2009-2015 Jeremy Mates
 
-This program is free software; you can redistribute it and/or modify it
-under the Artistic license.
+This module is free software; you can redistribute it and/or modify it
+under the Artistic License (2.0).
 
 =cut
