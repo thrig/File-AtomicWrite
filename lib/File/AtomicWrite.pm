@@ -738,7 +738,10 @@ locations.
 Some filesystems may also require a fsync call on a filehandle of the
 directory containing the file (see fsync(2) on RHEL, for example), to
 ensure that the directory data also reaches disk, in addition to the
-contents of the file.
+contents of the file. Certain filesystem options may also need to be
+set, such as C<data=journal> or C<data=ordered> on ext3, so that any
+crashes or unexpected glitches have less chance of unanticipated
+problems (such as the file write being ordered after the rename).
 
 =head1 SEE ALSO
 
@@ -749,6 +752,10 @@ L<File::Temp>, L<File::Path>, L<File::Basename>, L<Digest::SHA1>
 Alternatives, depending on the need, include:
 
 L<IO::Atomic>, L<File::Transaction>, L<File::Transaction::Atomic>, L<Directory::Transactional>
+
+This isn't easy:
+
+L<http://danluu.com/file-consistency/>
 
 =head1 AUTHOR
 
