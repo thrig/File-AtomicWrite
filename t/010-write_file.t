@@ -10,7 +10,7 @@
 use warnings;
 use strict;
 
-use Test::More tests => 28;
+use Test::More tests => 30;
 BEGIN { use_ok('File::AtomicWrite') }
 
 can_ok( 'File::AtomicWrite', qw{write_file} );
@@ -278,6 +278,23 @@ SKIP: {
     is( "$user_uid:$group_gid", "$file_uid:$file_gid",
       qq{owner set to "$owner"} );
   }
+}
+
+# utime - confirm that the module code is not buggy
+SKIP: {
+  # atime is not supported on FAT / win32
+  skip( "not on this OS", 2 ) if $^O =~ m/Win32/;
+
+  my $mtime = 1000;
+  my $test_file = File::Spec->catfile( $work_dir, "mtime" );
+  my $now = time();
+  test_write_file(
+    { file => $test_file, input => \"whatever", mtime => $mtime } );
+
+  my ( $file_atime, $file_mtime ) = ( stat $test_file )[ 8, 9 ];
+  ok($file_atime >= $now, "atime is now (not modified)");
+
+  is($file_mtime, $mtime, "mtime set with mtime $mtime");
 }
 
 # Accepts hash_ref to pass to write_file, returns data (if any) written

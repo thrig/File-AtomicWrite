@@ -289,6 +289,20 @@ sub _resolve {
     }
   }
 
+  if ( exists $params_ref->{mtime} ) {
+    croak 'invalid mtime data'
+      if ! defined $params_ref->{mtime}
+        or $params_ref->{mtime} !~ m/^[0-9]+$/;
+
+    my ( $file_atime ) = ( stat $tmp_filename )[ 8 ];
+    my $count = utime( $file_atime, $params_ref->{mtime}, $tmp_filename );
+    if ( $count != 1 ) {
+      my $save_errstr = $!;
+      _cleanup( $tmp_fh, $tmp_filename );
+      die "unable to utime temporary file: $save_errstr\n";
+    }
+  }
+
   unless ( rename( $tmp_filename, $params_ref->{file} ) ) {
     my $save_errstr = $!;
     _cleanup( $tmp_fh, $tmp_filename );
@@ -640,6 +654,11 @@ to the file. Usual throwing of error.
   ...->write_file({ ..., owner => '0:0' });
   ...->write_file({ ..., owner => 'user:somegroup' });
 
+=item B<mtime> => I<mtime>
+
+Accepts C<mtime> timestamp for C<utime> to be applied to the file.
+Usual throwing of error.
+
 =item B<tmpdir> => I<directory>
 
 If set to a directory, the temporary file will be written to this
@@ -682,7 +701,7 @@ Supply a C<LAYER> argument to C<binmode>. Enables B<BINMODE>.
 
   # just binmode (binary data)
   ...->write_file({ ..., BINMODE => 1 });
-  
+
   # custom binmode layer
   ...->write_file({ ..., binmode_layer => ':utf8' });
 
@@ -724,10 +743,10 @@ inode of the file being operated on:
 
   % touch afile
   % ln afile afilehardlink
-  % ls -i afile*          
+  % ls -i afile*
   3725607 afile         3725607 afilehardlink
   % perl -MFile::AtomicWrite -e \
-    'File::AtomicWrite->write_file({file =>"afile",input=>\"foo"})' 
+    'File::AtomicWrite->write_file({file =>"afile",input=>\"foo"})'
   % ls -i afile*
   3725622 afile         3725607 afilehardlink
 
