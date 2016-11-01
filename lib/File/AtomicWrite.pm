@@ -303,6 +303,32 @@ sub _resolve {
     }
   }
 
+  # If the file does not exist, but the backup does;
+  # the backup is left unmodified
+  if ( exists $params_ref->{backup} && -f $params_ref->{file}) {
+    croak 'invalid backup suffix'
+      if ! defined $params_ref->{backup}
+        or $params_ref->{backup} eq '';
+
+    # The backup file will be hardlinked in same directory as original
+    my $backup_filename = $params_ref->{file} . $params_ref->{backup};
+    if (-f $backup_filename) {
+      my $count = unlink( $backup_filename );
+      if ( $count != 1 ) {
+        my $save_errstr = $!;
+        _cleanup( $tmp_fh, $tmp_filename );
+        die "unable to unlink existing backup file: $save_errstr\n";
+      }
+    }
+
+    # Make hardlink
+    if ( ! link( $params_ref->{file}, $backup_filename ) ) {
+      my $save_errstr = $!;
+      _cleanup( $tmp_fh, $tmp_filename );
+      die "unable to link existing file to backup file: $save_errstr\n";
+    }
+  }
+
   unless ( rename( $tmp_filename, $params_ref->{file} ) ) {
     my $save_errstr = $!;
     _cleanup( $tmp_fh, $tmp_filename );
@@ -673,6 +699,12 @@ these directories may read even a temporary dot file while it is being
 written. To avoid this (slight but non-zero) risk, use the B<tmpdir>
 option to write the configuration out in full under a different
 directory on the same partition.
+
+=item B<backup> => I<suffix>
+
+Make a backup with this (non-empty) suffix. The backup is always created,
+even if there was no change. If a previous backup existed, it is deleted
+first. Usual throwing of error.
 
 =item B<checksum> => I<sha1 hexdigest>
 
