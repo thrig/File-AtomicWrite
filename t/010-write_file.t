@@ -255,9 +255,9 @@ SKIP: {
 
   skip( "no suitable login data to test owner option", 5 )
     unless defined $user_name
-      and $user_uid =~ m/^\d+$/
+      and $user_uid =~ m/^[0-9]+$/
       and defined $group_name
-      and $group_gid =~ m/^\d+$/;
+      and $group_gid =~ m/^[0-9]+$/;
 
   my @owner_strings = (
     $user_uid, $user_name, "$user_uid:$group_gid", "$user_name:$group_gid",

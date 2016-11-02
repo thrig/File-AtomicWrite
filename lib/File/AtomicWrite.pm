@@ -21,7 +21,7 @@ use File::Path qw/mkpath/;
 use File::Temp qw/tempfile/;
 use IO::Handle;
 
-our $VERSION = '1.16';
+our $VERSION = '1.17';
 
 # Default options
 my %default_params = ( MKPATH => 0, template => ".tmp.XXXXXXXXXX" );
@@ -271,7 +271,7 @@ sub _resolve {
   if ( exists $params_ref->{mode} ) {
     croak 'invalid mode data'
       if !defined $params_ref->{mode}
-        or $params_ref->{mode} !~ m/^\d+$/;
+        or $params_ref->{mode} !~ m/^[0-9]+$/;
 
     my $count = chmod( $params_ref->{mode}, $tmp_filename );
     if ( $count != 1 ) {
@@ -384,7 +384,7 @@ sub _set_ownership {
   my ( $user_name, $group_name ) = split /[:.]/, $owner, 2;
 
   my ( $login, $pass, $user_uid, $user_gid );
-  if ( $user_name =~ m/^(\d+)$/ ) {
+  if ( $user_name =~ m/^([0-9]+)$/ ) {
     $uid = $1;
   } else {
     ( $login, $pass, $user_uid, $user_gid ) = getpwnam($user_name)
@@ -394,7 +394,7 @@ sub _set_ownership {
 
   # Only customize group if have something from caller
   if ( defined $group_name ) {
-    if ( $group_name =~ m/^(\d+)$/ ) {
+    if ( $group_name =~ m/^([0-9]+)$/ ) {
       $gid = $group_name;
     } else {
       my ( $group_name, $pass, $group_gid ) = getgrnam($group_name)
@@ -780,9 +780,11 @@ L<http://danluu.com/file-consistency/>
 
 thrig - Jeremy Mates (cpan:JMATES) C<< <jmates at cpan.org> >>
 
+C<mtime> support contributed by Stijn De Weirdt.
+
 =head1 COPYRIGHT
 
-Copyright (C) 2009-2015 Jeremy Mates
+Copyright (C) 2009-2016 Jeremy Mates
 
 This module is free software; you can redistribute it and/or modify it
 under the Artistic License (2.0).

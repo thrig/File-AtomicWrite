@@ -1,6 +1,6 @@
-Atomic file writes via rename(1) and lots of (optional) sanity checks to ensure
-that things have not gone awry, for example if the new /etc/passwd is of size
-0, perhaps don't copy it into place?
+Atomic file writes via rename(1) and lots of (optional) sanity checks to
+ensure that things have not gone awry, for example if the new
+/etc/passwd is of 0 size, perhaps do not copy it into place?
 
 To install this module, use CPAN, for example:
 
@@ -23,7 +23,7 @@ The documentation can then be read via:
 
 COPYRIGHT AND LICENCE
 
-Copyright (C) 2009-2015 Jeremy Mates
+Copyright (C) 2009-2016 Jeremy Mates
 
 This module is free software; you can redistribute it and/or modify it
 under the Artistic License (2.0).
