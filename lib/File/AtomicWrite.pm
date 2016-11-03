@@ -410,18 +410,22 @@ sub _set_ownership {
   my ( $user_name, $group_name ) = split /[:.]/, $owner, 2;
 
   my ( $login, $pass, $user_uid, $user_gid );
-  if ( $user_name =~ m/^([0-9]+)$/ ) {
-    $uid = $1;
-  } else {
-    ( $login, $pass, $user_uid, $user_gid ) = getpwnam($user_name)
-      or croak 'user not in password database';
-    $uid = $user_uid;
+
+  # Only customize user if have something from caller
+  if ( defined $user_name and $user_name ne '' ) {
+    if ( $user_name =~ m/^([0-9]+)$/ ) {
+      $uid = $1;
+    } else {
+      ( $login, $pass, $user_uid, $user_gid ) = getpwnam($user_name)
+        or croak 'user not in password database';
+      $uid = $user_uid;
+    }
   }
 
   # Only customize group if have something from caller
-  if ( defined $group_name ) {
+  if ( defined $group_name and $group_name ne '') {
     if ( $group_name =~ m/^([0-9]+)$/ ) {
-      $gid = $group_name;
+      $gid = $1;
     } else {
       my ( $group_name, $pass, $group_gid ) = getgrnam($group_name)
         or croak 'group not in group database';
