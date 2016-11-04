@@ -10,7 +10,7 @@
 use warnings;
 use strict;
 
-use Test::More tests => 32;
+use Test::More tests => 34;
 BEGIN { use_ok('File::AtomicWrite') }
 
 can_ok( 'File::AtomicWrite', qw{write_file} );
@@ -227,14 +227,20 @@ SKIP: {
   # mode - two different modes to help avoid random starting umask
   # in the test environment...
   for my $mode (qw(0600 0700)) {
-    my $mode_test_file = File::Spec->catfile( $work_dir, "mode$mode" );
+    my $stringmode_test_file = File::Spec->catfile( $work_dir, "stringmode$mode" );
+    my $intmode_test_file = File::Spec->catfile( $work_dir, "intmode$mode" );
     my $octo_mode = oct($mode);
 
     test_write_file(
-      { file => $mode_test_file, input => \"whatever", mode => $octo_mode } );
-    my $file_mode = ( stat $mode_test_file )[2] & 07777;
+      { file => $intmode_test_file, input => \"whatever", mode => $octo_mode } );
+    my $file_mode = ( stat $intmode_test_file )[2] & 07777;
+    ok( $octo_mode == $file_mode, "test mode $mode (as integer)" );
 
-    ok( $octo_mode == $file_mode, "test mode $mode" );
+    test_write_file(
+      { file => $stringmode_test_file, input => \"whatever", mode => $mode } );
+    $file_mode = ( stat $stringmode_test_file )[2] & 07777;
+    ok( $mode == $file_mode, "test mode $mode (as octal string)" );
+
   }
 }
 
