@@ -269,11 +269,14 @@ sub _resolve {
   undef $tmp_fh;
 
   if ( exists $params_ref->{mode} ) {
+    my $mode = $params_ref->{mode};
     croak 'invalid mode data'
-      if !defined $params_ref->{mode}
-        or $params_ref->{mode} !~ m/^[0-9]+$/;
+      if !defined $mode
+        or $mode !~ m/^[0-9]+$/;
 
-    my $count = chmod( $params_ref->{mode}, $tmp_filename );
+    my $int_mode = substr("$mode", 0, 1) eq '0' ? oct("$mode") : ($mode + 0);
+
+    my $count = chmod( $mode, $tmp_filename );
     if ( $count != 1 ) {
       my $save_errstr = $!;
       _cleanup( $tmp_fh, $tmp_filename );
@@ -663,14 +666,14 @@ not, the module throws an error.
 =item B<mode> => I<unix mode>
 
 Accepts a Unix mode for C<chmod> to be applied to the file. Usual
-throwing of error. NOTE: depending on the source of the mode, C<oct>
-may be required to convert it:
+throwing of error. If the mode is a string starting with C<0>,
+C<oct> is used to convert it:
 
   my $orig_mode = (stat $source_file)[2] & 07777;
   ...->write_file({ ..., mode => $orig_mode });
 
   my $mode = '0644';
-  ...->write_file({ ..., mode => oct($mode) });
+  ...->write_file({ ..., mode => $mode });
 
 The module does not change C<umask>, nor is there a means to specify
 the permissions on directories created if B<MKPATH> is set.
