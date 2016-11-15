@@ -10,7 +10,7 @@
 use warnings;
 use strict;
 
-use Test::More tests => 30;
+use Test::More tests => 32;
 BEGIN { use_ok('File::AtomicWrite') }
 
 can_ok( 'File::AtomicWrite', qw{write_file} );
@@ -295,6 +295,34 @@ SKIP: {
   ok($file_atime >= $now, "atime is now (not modified)");
 
   is($file_mtime, $mtime, "mtime set with mtime $mtime");
+}
+
+# backup
+SKIP: {
+
+  my $test_file = File::Spec->catfile( $work_dir, "backup" );
+  my $test_backup = "$test_file.old";
+  my ($fh, $backup_txt);
+
+  # make backup
+  test_write_file(
+    { file => $test_backup, input => \"whatever_old" } );
+
+  test_write_file(
+    { file => $test_file, input => \"whatever", backup => '.old' } );
+
+  open( $fh, '<',  $test_backup);
+  $backup_txt = do { local $/; <$fh>};
+  close($fh);
+  is($backup_txt, "whatever_old", "existing backupfile is not modified/deleted when no destination file exists");
+
+  test_write_file(
+    { file => $test_file, input => \"whatever_new", backup => '.old' } );
+
+  open( $fh, '<',  $test_backup);
+  $backup_txt = do { local $/; <$fh>};
+  close($fh);
+  is($backup_txt, "whatever", "backupfile is modified (and is backup of previous file)");
 }
 
 # Accepts hash_ref to pass to write_file, returns data (if any) written
