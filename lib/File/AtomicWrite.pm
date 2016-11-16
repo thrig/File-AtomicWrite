@@ -5,8 +5,6 @@
 # means to set Unix file permissions and ownerships on the resulting
 # file. Run perldoc(1) on this module for more information.
 #
-# Copyright 2009-2010,2012-2013 by Jeremy Mates.
-#
 # This module is free software; you can redistribute it and/or modify it
 # under the Artistic license.
 
@@ -21,7 +19,7 @@ use File::Path qw/mkpath/;
 use File::Temp qw/tempfile/;
 use IO::Handle;
 
-our $VERSION = '1.17';
+our $VERSION = '1.18';
 
 # Default options
 my %default_params = ( MKPATH => 0, template => ".tmp.XXXXXXXXXX" );
@@ -272,11 +270,11 @@ sub _resolve {
     my $mode = $params_ref->{mode};
     croak 'invalid mode data'
       if !defined $mode
-        or $mode !~ m/^[0-9]+$/;
+      or $mode !~ m/^[0-9]+$/;
 
-    my $int_mode = substr("$mode", 0, 1) eq '0' ? oct("$mode") : ($mode + 0);
+    my $int_mode = substr( $mode, 0, 1 ) eq '0' ? oct($mode) : ( $mode + 0 );
 
-    my $count = chmod( $mode, $tmp_filename );
+    my $count = chmod( $int_mode, $tmp_filename );
     if ( $count != 1 ) {
       my $save_errstr = $!;
       _cleanup( $tmp_fh, $tmp_filename );
@@ -294,10 +292,10 @@ sub _resolve {
 
   if ( exists $params_ref->{mtime} ) {
     croak 'invalid mtime data'
-      if ! defined $params_ref->{mtime}
-        or $params_ref->{mtime} !~ m/^[0-9]+$/;
+      if !defined $params_ref->{mtime}
+      or $params_ref->{mtime} !~ m/^[0-9]+$/;
 
-    my ( $file_atime ) = ( stat $tmp_filename )[ 8 ];
+    my ($file_atime) = ( stat $tmp_filename )[8];
     my $count = utime( $file_atime, $params_ref->{mtime}, $tmp_filename );
     if ( $count != 1 ) {
       my $save_errstr = $!;
@@ -308,15 +306,15 @@ sub _resolve {
 
   # If the file does not exist, but the backup does;
   # the backup is left unmodified
-  if ( exists $params_ref->{backup} && -f $params_ref->{file}) {
+  if ( exists $params_ref->{backup} && -f $params_ref->{file} ) {
     croak 'invalid backup suffix'
-      if ! defined $params_ref->{backup}
-        or $params_ref->{backup} eq '';
+      if !defined $params_ref->{backup}
+      or $params_ref->{backup} eq '';
 
     # The backup file will be hardlinked in same directory as original
     my $backup_filename = $params_ref->{file} . $params_ref->{backup};
-    if (-f $backup_filename) {
-      my $count = unlink( $backup_filename );
+    if ( -f $backup_filename ) {
+      my $count = unlink($backup_filename);
       if ( $count != 1 ) {
         my $save_errstr = $!;
         _cleanup( $tmp_fh, $tmp_filename );
@@ -325,7 +323,7 @@ sub _resolve {
     }
 
     # Make hardlink
-    if ( ! link( $params_ref->{file}, $backup_filename ) ) {
+    if ( !link( $params_ref->{file}, $backup_filename ) ) {
       my $save_errstr = $!;
       _cleanup( $tmp_fh, $tmp_filename );
       die "unable to link existing file to backup file: $save_errstr\n";
@@ -426,7 +424,7 @@ sub _set_ownership {
   }
 
   # Only customize group if have something from caller
-  if ( defined $group_name and $group_name ne '') {
+  if ( defined $group_name and $group_name ne '' ) {
     if ( $group_name =~ m/^([0-9]+)$/ ) {
       $gid = $1;
     } else {
@@ -819,7 +817,7 @@ L<http://danluu.com/file-consistency/>
 
 thrig - Jeremy Mates (cpan:JMATES) C<< <jmates at cpan.org> >>
 
-C<mtime> support contributed by Stijn De Weirdt.
+C<mtime> and other features contributed by Stijn De Weirdt.
 
 =head1 COPYRIGHT
 

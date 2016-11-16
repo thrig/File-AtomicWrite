@@ -9,6 +9,7 @@
 
 use warnings;
 use strict;
+use Carp qw(croak);
 
 use Test::More tests => 34;
 BEGIN { use_ok('File::AtomicWrite') }
@@ -224,22 +225,22 @@ SKIP: {
 SKIP: {
   skip( "not on this OS", 2 ) if $^O =~ m/Win32/;
 
-  # mode - two different modes to help avoid random starting umask
-  # in the test environment...
+  # mode -
   for my $mode (qw(0600 0700)) {
-    my $stringmode_test_file = File::Spec->catfile( $work_dir, "stringmode$mode" );
-    my $intmode_test_file = File::Spec->catfile( $work_dir, "intmode$mode" );
     my $octo_mode = oct($mode);
 
+    my $octmode_test_file = File::Spec->catfile( $work_dir, "octmode$mode" );
     test_write_file(
-      { file => $intmode_test_file, input => \"whatever", mode => $octo_mode } );
-    my $file_mode = ( stat $intmode_test_file )[2] & 07777;
-    ok( $octo_mode == $file_mode, "test mode $mode (as integer)" );
+      { file => $octmode_test_file, input => \"whatever", mode => $octo_mode } );
+    my $file_mode = ( stat $octmode_test_file )[2] & 07777;
+    is( $file_mode, $octo_mode, "test octal mode $mode" );
 
+    my $stringmode_test_file =
+      File::Spec->catfile( $work_dir, "stringmode$mode" );
     test_write_file(
       { file => $stringmode_test_file, input => \"whatever", mode => $mode } );
     $file_mode = ( stat $stringmode_test_file )[2] & 07777;
-    ok( $mode == $file_mode, "test mode $mode (as octal string)" );
+    is( $file_mode, $octo_mode, "test string mode $mode" );
 
   }
 }
@@ -261,9 +262,9 @@ SKIP: {
 
   skip( "no suitable login data to test owner option", 5 )
     unless defined $user_name
-      and $user_uid =~ m/^[0-9]+$/
-      and defined $group_name
-      and $group_gid =~ m/^[0-9]+$/;
+    and $user_uid =~ m/^[0-9]+$/
+    and defined $group_name
+    and $group_gid =~ m/^[0-9]+$/;
 
   my @owner_strings = (
     $user_uid, $user_name, "$user_uid:$group_gid", "$user_name:$group_gid",
@@ -291,16 +292,18 @@ SKIP: {
   # atime is not supported on FAT / win32
   skip( "not on this OS", 2 ) if $^O =~ m/Win32/;
 
-  my $mtime = 1000;
+  my $mtime     = 1000;
   my $test_file = File::Spec->catfile( $work_dir, "mtime" );
-  my $now = time();
+  my $now       = time();
   test_write_file(
     { file => $test_file, input => \"whatever", mtime => $mtime } );
 
+  # TODO parse `mount` output for noatime, or module that checks for that?
   my ( $file_atime, $file_mtime ) = ( stat $test_file )[ 8, 9 ];
-  ok($file_atime >= $now, "atime is now (not modified)");
+  diag("notice: filesystem mounted noatime may fail atime test");
+  ok( $file_atime >= $now, "atime is now (not modified)" );
 
-  is($file_mtime, $mtime, "mtime set with mtime $mtime");
+  is( $file_mtime, $mtime, "mtime set with mtime $mtime" );
 }
 
 # backup
@@ -308,27 +311,29 @@ SKIP: {
 
   my $test_file = File::Spec->catfile( $work_dir, "backup" );
   my $test_backup = "$test_file.old";
-  my ($fh, $backup_txt);
+  my ( $fh, $backup_txt );
 
   # make backup
-  test_write_file(
-    { file => $test_backup, input => \"whatever_old" } );
+  test_write_file( { file => $test_backup, input => \"whatever_old" } );
 
   test_write_file(
     { file => $test_file, input => \"whatever", backup => '.old' } );
 
-  open( $fh, '<',  $test_backup);
-  $backup_txt = do { local $/; <$fh>};
+  open( $fh, '<', $test_backup );
+  $backup_txt = do { local $/; <$fh> };
   close($fh);
-  is($backup_txt, "whatever_old", "existing backupfile is not modified/deleted when no destination file exists");
+  is( $backup_txt, "whatever_old",
+    "existing backupfile is not modified/deleted when no destination file exists"
+  );
 
   test_write_file(
     { file => $test_file, input => \"whatever_new", backup => '.old' } );
 
-  open( $fh, '<',  $test_backup);
-  $backup_txt = do { local $/; <$fh>};
+  open( $fh, '<', $test_backup );
+  $backup_txt = do { local $/; <$fh> };
   close($fh);
-  is($backup_txt, "whatever", "backupfile is modified (and is backup of previous file)");
+  is( $backup_txt, "whatever",
+    "backupfile is modified (and is backup of previous file)" );
 }
 
 # Accepts hash_ref to pass to write_file, returns data (if any) written
@@ -345,7 +350,7 @@ sub test_write_file {
 
   my $fh;
   open( $fh, '<', $param_ref->{file} )
-    or diag("Cannot open output file: $!\n");
+    or croak( "Cannot open output file '" . $param_ref->{file} . "': $!" );
   if ($binmode) {
     binmode($fh);
   }
