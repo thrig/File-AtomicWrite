@@ -239,7 +239,7 @@ SKIP: {
     test_write_file(
       { file => $stringmode_test_file, input => \"whatever", mode => $mode } );
     $file_mode = ( stat $stringmode_test_file )[2] & 07777;
-    ok( $mode == $file_mode, "test mode $mode (as octal string)" );
+    ok( $octo_mode == $file_mode, "test mode $mode (as octal string)" );
 
   }
 }
@@ -345,7 +345,7 @@ sub test_write_file {
 
   my $fh;
   open( $fh, '<', $param_ref->{file} )
-    or diag("Cannot open output file: $!\n");
+    or diag("Cannot open output file $param_ref->{file}: $!\n");
   if ($binmode) {
     binmode($fh);
   }

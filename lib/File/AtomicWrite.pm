@@ -276,7 +276,7 @@ sub _resolve {
 
     my $int_mode = substr("$mode", 0, 1) eq '0' ? oct("$mode") : ($mode + 0);
 
-    my $count = chmod( $mode, $tmp_filename );
+    my $count = chmod( $int_mode, $tmp_filename );
     if ( $count != 1 ) {
       my $save_errstr = $!;
       _cleanup( $tmp_fh, $tmp_filename );
