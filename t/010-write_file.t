@@ -223,7 +223,7 @@ SKIP: {
 }
 
 SKIP: {
-  skip( "not on this OS", 2 ) if $^O =~ m/Win32/;
+  skip( "not on this OS", 4 ) if $^O =~ m/Win32/;
 
   # mode -
   for my $mode (qw(0600 0700)) {
@@ -289,7 +289,7 @@ SKIP: {
 
 # utime - confirm that the module code is not buggy
 SKIP: {
-  # atime is not supported on FAT / win32
+  # atime is not supported on FAT / Win32
   skip( "not on this OS", 2 ) if $^O =~ m/Win32/;
 
   my $mtime     = 1000;
