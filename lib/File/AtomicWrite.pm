@@ -807,7 +807,7 @@ L<File::Temp>, L<File::Path>, L<File::Basename>, L<Digest::SHA1>
 
 Alternatives, depending on the need, include:
 
-L<IO::Atomic>, L<File::Transaction>, L<File::Transaction::Atomic>, L<Directory::Transactional>
+L<Directory::Transactional>
 
 This isn't easy:
 
