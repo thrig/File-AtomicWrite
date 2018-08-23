@@ -813,6 +813,8 @@ This isn't easy:
 
 L<http://danluu.com/file-consistency/>
 
+L<https://homes.cs.washington.edu/~lijl/papers/ferrite-asplos16.pdf>
+
 =head1 AUTHOR
 
 thrig - Jeremy Mates (cpan:JMATES) C<< <jmates at cpan.org> >>
