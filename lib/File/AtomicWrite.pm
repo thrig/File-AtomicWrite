@@ -798,6 +798,8 @@ set, such as C<data=journal> or C<data=ordered> on ext3, so that any
 crashes or unexpected glitches have less chance of unanticipated
 problems (such as the file write being ordered after the rename).
 
+Renames may strip fancy ACL or selinux contexts.
+
 =head1 SEE ALSO
 
 Supporting modules:
