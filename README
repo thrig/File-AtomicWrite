@@ -20,10 +20,3 @@ This can be built and installed by running:
 The documentation can then be read via:
 
   perldoc File::AtomicWrite
-
-COPYRIGHT AND LICENCE
-
-Copyright (C) 2009-2016 Jeremy Mates
-
-This module is free software; you can redistribute it and/or modify it
-under the Artistic License (2.0).
